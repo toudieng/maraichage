@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmer la commande{% endblock %}
+
+{% block content %}
+    <h1>Confirmer votre commande</h1>
+    <p>Veuillez vérifier les détails de votre commande avant de la finaliser.</p>
+
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Prix unitaire</th>
+                <th>Quantité</th>
+                <th>Prix total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in details_du_panier %}
+            <tr>
+                <td>{{ item.produit.nom }}</td>
+                <td>{{ item.prix_unitaire_actuel|floatformat:2 }} F CFA</td>
+                <td>{{ item.quantite }}</td>
+                <td>{{ item.prix_total_item|floatformat:2 }} F CFA</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="text-end mt-4">
+        <h3>Total à payer : {{ total|floatformat:2 }} F CFA</h3>
+    </div>
+
+    <form action="{% url 'passer_commande' %}" method="post" class="mt-4">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-lg">Finaliser la commande</button>
+    </form>
+{% endblock %}

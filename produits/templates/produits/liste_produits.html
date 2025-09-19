@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Produits{% endblock %}
+
+{% block content %}
+    <h1>Nos Produits Maraîchers</h1>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for produit in produits %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ produit.nom }}</h5>
+                        <p class="card-text">{{ produit.description }}</p>
+                        <p class="card-text"><strong>Prix actuel : {{ produit.prix_actuel }} F CFA</strong></p>
+                        <form action="{% url 'ajouter_au_panier' produit.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">Ajouter au panier</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

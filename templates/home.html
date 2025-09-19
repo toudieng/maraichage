@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Accueil | PROJET NATAL MBEY{% endblock %}
+
+{% block content %}
+    <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5">
+            <h1 class="display-5 fw-bold">Bienvenue sur le site du PROJET NATAL MBEY</h1>
+            <p class="col-md-8 fs-4">
+                Découvrez notre initiative de maraîchage moderne dans la région de Fatick au Sénégal. Nous nous engageons à produire des légumes de qualité tels que les tomates, oignons et piments, en utilisant des méthodes innovantes comme les pompes solaires et l'arrosage au goutte-à-goutte.
+            </p>
+            <a href="{% url 'liste_produits' %}" class="btn btn-primary btn-lg">Découvrir nos produits</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Notre Mission</h2>
+            <p>Ce projet vise à contribuer au développement de l'économie locale, à créer des emplois et à satisfaire la demande du marché en produits frais et locaux.</p>
+        </div>
+        <div class="col-md-6">
+            <h2>Le Maraîchage Moderne</h2>
+            [cite_start]<p>En utilisant des techniques innovantes, nous assurons une production durable et de haute qualité, tout en protégeant les ressources naturelles. [cite: 21, 29, 32]</p>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Mon Panier{% endblock %}
+
+{% block content %}
+    <h1>Mon Panier</h1>
+
+    {% if details_du_panier %}
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Prix unitaire</th>
+                    <th>Quantité</th>
+                    <th>Prix total</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in details_du_panier %}
+                <tr>
+                    <td>{{ item.produit.nom }}</td>
+                    <td>{{ item.prix_unitaire_actuel|floatformat:2 }} F CFA</td>
+                    <td>
+                        <form action="{% url 'voir_panier' %}" method="post" class="d-flex">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <input type="hidden" name="action" value="mettre_a_jour">
+                            <input type="number" name="quantite" value="{{ item.quantite }}" min="1" class="form-control me-2" style="width: 80px;">
+                            <button type="submit" class="btn btn-sm btn-primary">Mettre à jour</button>
+                        </form>
+                    </td>
+                    <td>{{ item.prix_total_item|floatformat:2 }} F CFA</td>
+                    <td>
+                        <form action="{% url 'voir_panier' %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <input type="hidden" name="action" value="supprimer">
+                            <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="text-end mt-4">
+            <h3>Total du panier : {{ total|floatformat:2 }} F CFA</h3>
+            <a href="{% url 'passer_commande' %}" class="btn btn-success btn-lg mt-3">Passer la commande</a>
+        </div>
+        <a href="{% url 'liste_produits' %}" class="btn btn-secondary mt-3">Continuer les achats</a>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Votre panier est vide.
+        </div>
+        <a href="{% url 'liste_produits' %}" class="btn btn-primary">Voir les produits</a>
+    {% endif %}
+{% endblock %}

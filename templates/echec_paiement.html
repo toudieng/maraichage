@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}Paiement échoué{% endblock %}
+
+{% block content %}
+    <h1>Paiement échoué</h1>
+    <div class="alert alert-danger" role="alert">
+        Une erreur est survenue lors du traitement de votre paiement. Veuillez réessayer ou contacter le support.
+    </div>
+    <a href="{% url 'voir_panier' %}" class="btn btn-primary mt-4">Retour au panier</a>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Accueil Restaurant{% endblock %}</title>
+
+  <link rel="stylesheet" href="{% static 'css/accueil.css' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  {% block style %}
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Times New Roman', Times, serif;
+      background-color: black;
+      color: white;
+    }
+    header {
+      position: relative;
+      background-image: url("{% static 'images/connexion.jpg' %}");
+      background-size: contain;
+      background-position: center;
+      justify-content: space-between;
+      height: 60vh;
+      clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
+    }
+
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.4);
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+    }    
+
+    .card {
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+  </style>
+  {% endblock %}
+</head>
+
+<body>
+{% block nav %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top px-5">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">L'Occidental</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link" href="#">Accueil</a></li>
+        <li class="nav-item"><a class="nav-link" href="#section">Utilisation</a></li>
+        <li class="nav-item"><a class="nav-link" href="#footer">Contact</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'menu' %}">Menu</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block header %}
+<header class="d-flex align-items-center justify-content-center text-center text-white">
+  <div class="overlay"></div>
+  <div class="container position-relative">
+    <p class="lead">Accédez facilement à votre compte utilisateur pour profiter des services de notre restaurant.</p>
+    <h1 class="display-4">Bienvenue à l'Occidental</h1>
+    <a href="{% url 'connexion' %}" class="btn btn-outline-light mt-3">Se connecter</a>
+  </div>
+</header>
+{% endblock %}
+
+{% block section %}
+<section class="container-fluid py-5">
+  <div class="row align-items-center">
+    <div class="col-md-6 text-center">
+      <img src="{% static 'images/utilisation.jpg' %}" class="img-fluid" alt="Simplicité d'utilisation">
+    </div>
+    <div class="col-md-6">
+      <h2>Simplicité d'utilisation</h2>
+      <p>Notre interface intuitive permet aux utilisateurs de se connecter rapidement et facilement.</p>
+    </div>
+  </div>
+</section>
+
+<section class="container-fluid py-5">
+  <div class="row align-items-center flex-md-row-reverse">
+    <div class="col-md-6 text-center">
+      <img src="{% static 'images/securite.jpg' %}" class="img-fluid" alt="Sécurité renforcée">
+    </div>
+    <div class="col-md-6">
+      <h2>Sécurité renforcée</h2>
+      <p>Nous garantissons la sécurité de vos informations personnelles grâce à des protocoles de sécurité avancés.</p>
+    </div>
+  </div>
+</section>
+
+<section class="container-fluid py-5">
+  <div class="row align-items-center">
+    <div class="col-md-6 text-center">
+      <img src="{% static 'images/support.jpg' %}" class="img-fluid" alt="Support client réactif">
+    </div>
+    <div class="col-md-6">
+      <h2>Support client réactif</h2>
+      <p>Notre équipe est disponible pour vous aider en cas de besoin, assurant une expérience sans tracas.</p>
+    </div>
+  </div>
+</section>
+
+<section class="container py-5 text-center" id="section">
+  <h2 class="display-5">Caractéristiques clés</h2>
+  <p class="lead text-secondary">Découvrez les options qui améliorent votre expérience utilisateur.</p>
+  <div class="row mt-4">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <img src="{% static 'images/connexion_rapide.jpg' %}" class="card-img-top" alt="Connexion rapide">
+        <div class="card-body">
+          <h5 class="card-title">Connexion rapide</h5>
+          <p class="card-text">Accédez à votre compte en quelques clics grâce à notre formulaire de connexion simple avec le bouton se connecter.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <img src="{% static 'images/creation_rapide.jpg' %}" class="card-img-top" alt="Création de compte facile">
+        <div class="card-body">
+          <h5 class="card-title">Création de compte facile</h5>
+          <p class="card-text">Inscrivez-vous en quelques étapes pour profiter pleinement de nos services.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <img src="{% static 'images/recuperation_mdp.jpg' %}" class="card-img-top" alt="Récupération de mot de passe">
+        <div class="card-body">
+          <h5 class="card-title">Récupération de mot de passe</h5>
+          <p class="card-text">Vous avez oublié votre mot de passe ? Notre outil de récupération vous guide facilement.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<h2 class="text-center mb-4">Statistiques et Reporting</h2>
+
+<section class="container py-5 text-white" id="statistiques">
+  
+  <div class="row">
+
+    <div class="col-md-4">
+      <div class="card text-dark mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Chiffre d'affaires</h5>
+          <ul class="list-unstyled">
+            <li>Jour : <strong>{{ chiffre_jour|default:"0" }} FCFA</strong></li>
+            <li>Semaine : <strong>{{ chiffre_semaine|default:"0" }} FCFA</strong></li>
+            <li>Mois : <strong>{{ chiffre_mois|default:"0" }} FCFA</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card text-dark mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Plats les plus populaires</h5>
+          {% if plats_populaires %}
+            <ol>
+              {% for plat in plats_populaires %}
+                <li>{{ plat.nom }} ({{ plat.nombre_commandes }} commande{{ plat.nombre_commandes|pluralize }})</li>
+              {% endfor %}
+            </ol>
+          {% else %}
+            <p>Aucune donnée disponible.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card text-dark mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Taux d'occupation des tables</h5>
+          <p>
+            <strong>{{ tables_occupees|default:"0" }}</strong> tables occupées sur <strong>{{ total_tables|default:"0" }}</strong>.<br>
+            <strong>{{ taux_occupation|floatformat:1|default:"0.0" }}%</strong> d’occupation aujourd’hui.
+          </p>
+          <div class="progress">
+            <div class="progress-bar bg-success"
+              role="progressbar"
+              style="width: {{ taux_occupation|floatformat:'1'|default:'0.0' }}%"
+              aria-valuenow="{{ taux_occupation|floatformat:'1'|default:'0.0' }}"
+              aria-valuemin="0" aria-valuemax="100">
+              {{ taux_occupation|floatformat:'1'|default:'0.0' }}%
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+<footer id="footer">
+  {% include 'base_footer.html' %}
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
