@@ -119,11 +119,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'utilisateurs.Utilisateur'
 
+# URL où les utilisateurs non connectés sont redirigés par @login_required
+LOGIN_URL = 'login' 
+
 # URL de redirection après une connexion réussie
-LOGIN_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'home' 
 
-# URL pour la page de connexion
-LOGIN_URL = 'login'
-
-# URL de redirection après une déconnexion
+# URL de redirection après une déconnexion réussie
 LOGOUT_REDIRECT_URL = 'home'
+
+

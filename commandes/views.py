@@ -10,6 +10,7 @@ import json
 from maraichage_ecommerce.paydunya_config import (
     PAYDUNYA_MASTER_KEY, PAYDUNYA_PRIVATE_KEY, PAYDUNYA_TOKEN, PAYDUNYA_API_URL
 )
+from paydunya.checkout import CheckoutInvoice
 
 @login_required
 def ajouter_au_panier(request, produit_id):
@@ -191,7 +192,7 @@ def passer_commande(request):
             "description": item.produit.description,
         })
 
-    # Création de la commande avec statut en attente
+    # 1. CRÉATION DE LA COMMANDE ET DES DÉTAILS
     with transaction.atomic():
         commande = Commande.objects.create(
             utilisateur=request.user,
@@ -199,13 +200,19 @@ def passer_commande(request):
             statut='en_attente'
         )
 
-    for item in details_du_panier:
-        Details_commande.objects.create(
-            commande=commande,
-            produit=item.produit,
-            prix_unitaire=item.prix_unitaire_actuel,
-            quantite=item.quantite
-        )
+        for item in details_du_panier:
+            Details_commande.objects.create(
+                commande=commande,
+                produit=item.produit,
+                prix_unitaire=item.prix_unitaire_actuel,
+                quantite=item.quantite
+            )
+            
+    # 2. CALCUL DU RETURN_URL AVANT L'APPEL API
+    # Nous utilisons l'ID de la commande, qui est maintenant disponible
+    return_url_final = request.build_absolute_uri(
+        reverse('paiement_success') + f"?commande_id={commande.id}"
+    )
 
     headers = {
         'Content-Type': 'application/json',
@@ -214,6 +221,7 @@ def passer_commande(request):
         'PAYDUNYA-TOKEN': PAYDUNYA_TOKEN,
     }
 
+    # 3. DÉFINITION DU PAYLOAD AVEC LE RETURN_URL CORRECT
     payload = {
         "store": {
             "name": "Maraîchage Ecommerce",
@@ -229,11 +237,11 @@ def passer_commande(request):
         },
         "actions": {
             "cancel_url": request.build_absolute_uri(reverse('voir_panier')),
-            # Le return_url sera mis à jour après réception du token
-            "return_url": "",  # temporaire
+            "return_url": return_url_final,  # ⬅️ CORRECTION APPLIQUÉE ICI
         },
     }
 
+    # 4. APPEL À L'API PAYDUNYA
     try:
         response = requests.post(
             f'{PAYDUNYA_API_URL}checkout-invoice/create',
@@ -247,20 +255,13 @@ def passer_commande(request):
             checkout_url = response_data.get('checkout_url') or response_data.get('response_text')
 
             if token and checkout_url:
+                # Stockage du token pour la vérification future (paiement_succes)
                 commande.transaction_id = token
                 commande.save()
 
-                # Construction du return_url après réception du token
-                return_url = request.build_absolute_uri(
-                    reverse('paiement_success') + f"?token={token}&commande_id={commande.id}"
-                )
-
-                # Mise à jour du payload avec le bon return_url
-                payload["actions"]["return_url"] = return_url
-
                 # Optionnel : log pour debug
-                print("✅ URL de retour PayDunya :", return_url)
-
+                print("✅ Redirection vers PayDunya. Token:", token)
+                
                 return redirect(checkout_url)
             else:
                 print("⚠️ Réponse incomplète de PayDunya:", response_data)
@@ -279,57 +280,66 @@ def paiement_success(request):
     token = request.GET.get("token")
     commande_id = request.GET.get("commande_id")
 
+    # Si le token ou l'ID manquent, on ne peut rien faire
     if not commande_id or not token:
-        return redirect('echec_paiement')
+        # Rediriger vers l'échec
+        return redirect('echec_paiement') 
 
     try:
+        # 1. Récupération de la commande (doit appartenir à l'utilisateur actuel)
         commande = get_object_or_404(Commande, id=int(commande_id), utilisateur=request.user)
-    except ValueError:
+    except Commande.DoesNotExist:
+        # Si la commande n'existe pas ou n'appartient pas à l'utilisateur
         return redirect('echec_paiement')
 
-    headers = {
-        'PAYDUNYA-MASTER-KEY': PAYDUNYA_MASTER_KEY,
-        'PAYDUNYA-PRIVATE-KEY': PAYDUNYA_PRIVATE_KEY,
-        'PAYDUNYA-TOKEN': PAYDUNYA_TOKEN,
-    }
+    # 2. Vérification du statut (si déjà traitée)
+    if commande.statut != 'en_attente':
+        # Paiement déjà validé. On redirige vers la confirmation.
+        return render(request, 'confirmation_commande.html', {'commande': commande, 'paiement_ok': True})
 
-    try:
-        response = requests.get(
-            f'{PAYDUNYA_API_URL}checkout-invoice/verify/{commande.transaction_id}',
-            headers=headers
-        )
-        response_data = response.json()
 
-        if response_data.get("status") == "completed":
+    # 3. Utilisation de la classe PayDunya pour la vérification
+    invoice = CheckoutInvoice()
+    
+    # confirm() appelle l'API de vérification avec l'URL correcte
+    confirmation = invoice.confirm(token) 
+
+    # DEBUG: Afficher la réponse de confirmation dans la console du serveur
+    print(f"DEBUG PAYDUNYA SDK CONFIRMATION: {confirmation}")
+    
+    if confirmation and confirmation.get("status") == "completed":
+        try:
             with transaction.atomic():
+                # Mise à jour du statut de la Commande
                 commande.statut = 'validée'
+                commande.transaction_id = token # Enregistrement du token de transaction
                 commande.save()
 
+                # Suppression du Panier
                 try:
-                    panier = Panier.objects.get(utilisateur=request.user)
-                    panier.delete()
+                    Panier.objects.get(utilisateur=request.user).delete()
                 except Panier.DoesNotExist:
                     pass
-
-            return render(request, 'confirmation_commande.html', {
-                'commande': commande,
-                'paiement_ok': True
-            })
-
-        else:
-            commande.statut = 'annulee'
-            commande.save()
-            try:
-                panier = Panier.objects.get(utilisateur=request.user)
-                panier.delete()
-            except Panier.DoesNotExist:
-                pass
-            return render(request, 'echec_paiement.html', {"erreur": "Paiement non confirmé."})
-
-    except Exception as e:
-        commande.statut = 'annulee'
+                
+                # Succès : Afficher la page de confirmation
+                return render(request, 'confirmation_commande.html', {
+                    'commande': commande,
+                    'paiement_ok': True,
+                    'transaction': token
+                })
+        except Exception as e:
+            # Erreur interne après confirmation réussie
+            print(f"Erreur interne après confirmation PayDunya: {e}")
+            return render(request, 'echec_paiement.html', {"erreur": "Erreur interne après paiement. Contactez le support."})
+    else:
+        # 4. Échec de la confirmation (statut != completed ou erreur)
+        message = confirmation.get("response_text", "Paiement non confirmé ou erreur inconnue par PayDunya.") if confirmation else "Réponse PayDunya vide."
+        
+        # Annulation de la commande
+        commande.statut = 'annulee' 
         commande.save()
-        return render(request, 'echec_paiement.html', {"erreur": str(e)})
+            
+        return render(request, 'echec_paiement.html', {'erreur': message})
 
 @login_required
 def confirmation_commande(request, commande_id):
@@ -338,65 +348,65 @@ def confirmation_commande(request, commande_id):
     return render(request, 'confirmation_commande.html', context)
 
 
-@login_required
-def confirmation_commande_paydunya(request):
-    invoice_token = request.GET.get('invoice_token') or request.GET.get('token') or request.session.get('paydunya_invoice_token')
+# @login_required
+# def confirmation_commande_paydunya(request):
+#     invoice_token = request.GET.get('invoice_token') or request.GET.get('token') or request.session.get('paydunya_invoice_token')
 
 
-    if not invoice_token:
-        invoice_token = request.session.pop('paydunya_invoice_token', None)
+#     if not invoice_token:
+#         invoice_token = request.session.pop('paydunya_invoice_token', None)
 
-    if not invoice_token:
-        return redirect('echec_paiement')
+#     if not invoice_token:
+#         return redirect('echec_paiement')
     
-    # Utilisez ce token pour vérifier le statut de la facture auprès de l'API de Paydunya
-    headers = {
-        'PAYDUNYA-MASTER-KEY': PAYDUNYA_MASTER_KEY,
-        'PAYDUNYA-PRIVATE-KEY': PAYDUNYA_PRIVATE_KEY,
-        'PAYDUNYA-TOKEN': PAYDUNYA_TOKEN,
-    }
+#     # Utilisez ce token pour vérifier le statut de la facture auprès de l'API de Paydunya
+#     headers = {
+#         'PAYDUNYA-MASTER-KEY': PAYDUNYA_MASTER_KEY,
+#         'PAYDUNYA-PRIVATE-KEY': PAYDUNYA_PRIVATE_KEY,
+#         'PAYDUNYA-TOKEN': PAYDUNYA_TOKEN,
+#     }
 
-    try:
-        response = requests.get(
-            f'{PAYDUNYA_API_URL}checkout-invoice/verify/{invoice_token}',
-            headers=headers
-        )
-        if response.status_code != 200:
-            print(f"Réponse HTTP inattendue: {response.status_code}")
-            return redirect('echec_paiement')
+#     try:
+#         response = requests.get(
+#             f'{PAYDUNYA_API_URL}checkout-invoice/verify/{invoice_token}',
+#             headers=headers
+#         )
+#         if response.status_code != 200:
+#             print(f"Réponse HTTP inattendue: {response.status_code}")
+#             return redirect('echec_paiement')
 
-        response_data = response.json()
+#         response_data = response.json()
 
-        # Vérification du statut de la transaction
-        if response_data.get('response_code') == '00' and response_data.get('status') == 'completed':
-            with transaction.atomic():
-                panier = Panier.objects.get(utilisateur=request.user)
-                details_du_panier = Details_panier.objects.filter(panier=panier)
+#         # Vérification du statut de la transaction
+#         if response_data.get('response_code') == '00' and response_data.get('status') == 'completed':
+#             with transaction.atomic():
+#                 panier = Panier.objects.get(utilisateur=request.user)
+#                 details_du_panier = Details_panier.objects.filter(panier=panier)
                 
-                commande = Commande.objects.create(
-                    utilisateur=request.user,
-                    total_prix=response_data['total_amount'],
-                    statut='Validée'
-                )
+#                 commande = Commande.objects.create(
+#                     utilisateur=request.user,
+#                     total_prix=response_data['total_amount'],
+#                     statut='Validée'
+#                 )
                 
-                for item in details_du_panier:
-                    Details_commande.objects.create(
-                        commande=commande,
-                        produit=item.produit,
-                        prix_unitaire=get_prix_actuel(item.produit),
-                        quantite=item.quantite
-                    )
+#                 for item in details_du_panier:
+#                     Details_commande.objects.create(
+#                         commande=commande,
+#                         produit=item.produit,
+#                         prix_unitaire=get_prix_actuel(item.produit),
+#                         quantite=item.quantite
+#                     )
                 
-                panier.delete()
+#                 panier.delete()
                 
-            return render(request, 'confirmation_commande.html', {'commande': commande})
-        else:
-            print(f"Échec de la vérification Paydunya: {response_data}")
-            return redirect('echec_paiement')
+#             return render(request, 'confirmation_commande.html', {'commande': commande})
+#         else:
+#             print(f"Échec de la vérification Paydunya: {response_data}")
+#             return redirect('echec_paiement')
 
-    except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
-        print(f"Erreur lors de la vérification du paiement: {e}")
-        return redirect('echec_paiement')
+#     except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+#         print(f"Erreur lors de la vérification du paiement: {e}")
+#         return redirect('echec_paiement')
 
 
 def paydunya_webhook(request):

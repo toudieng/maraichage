@@ -1,13 +1,26 @@
-{% extends 'base.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmation de Commande - PROJET NATAL MBEY</title>
+    </head>
+<body>
+    <div class="container mt-5 text-center">
+        <h1 class="text-success">Merci pour votre commande !</h1>
+        
+        <p class="lead">Votre commande numéro **{{ commande.id }}** a été enregistrée et le paiement est **validé**.</p>
+        <p>Montant total : **{{ commande.total_prix|floatformat:0 }} FCFA**</p>
+        
+        <a href="{% url 'liste_produits' %}" class="btn btn-primary btn-lg mt-4">
+            <i class="fas fa-shopping-basket"></i> Continuer vos achats
+        </a>
+        
+        <p class="mt-3">
+            <a href="{% url 'details_commande' commande.id %}">Voir le récapitulatif de ma commande</a>
+        </p>
 
-{% block title %}Confirmation de la commande{% endblock %}
-
-{% block content %}
-    <h1>Merci pour votre commande !</h1>
-    <div class="alert alert-success" role="alert">
-        Votre commande numéro **{{ commande.id }}** a été enregistrée avec succès.
     </div>
-    <p>Le montant total de votre commande est de **{{ commande.total_prix|floatformat:2 }} F CFA**.</p>
-    <p>Nous vous contacterons bientôt pour finaliser les détails de la livraison.</p>
-    <a href="{% url 'liste_produits' %}" class="btn btn-primary mt-4">Continuer vos achats</a>
-{% endblock %}
+
+    </body>
+</html>
