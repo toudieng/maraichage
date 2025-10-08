@@ -14,7 +14,12 @@ SECRET_KEY = 'django-insecure-40=0hrkt_0+hz28_$zjaowx5#+c+f779=#)0zmiama3_m)sepn
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    
+    '6bfc9b81f387.ngrok-free.app',
+]
 
 
 # Application definition
@@ -29,6 +34,10 @@ INSTALLED_APPS = [
     'produits.apps.ProduitsConfig',
     'utilisateurs.apps.UtilisateursConfig',
     'commandes.apps.CommandesConfig',
+    'crispy_forms',
+    'crispy_bootstrap5',
+    'django.contrib.humanize',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -127,5 +136,8 @@ LOGIN_REDIRECT_URL = 'home'
 
 # URL de redirection après une déconnexion réussie
 LOGOUT_REDIRECT_URL = 'home'
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 

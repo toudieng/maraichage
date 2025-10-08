@@ -42,3 +42,25 @@ class InscriptionForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class UtilisateurUpdateForm(forms.ModelForm):
+    # Les champs par défaut que vous voulez modifier
+    email = forms.EmailField() 
+    
+    class Meta:
+        model = Utilisateur
+        fields = [
+            'username', 
+            'email', 
+            'first_name', 
+            'last_name',
+            
+            # 🚨 Champs étendus 🚨
+            'telephone', 
+            'adresse'
+        ]
+        # Optionnel: Vous pouvez ajouter des widgets pour la mise en forme (ex: Bootstrap)
+        widgets = {
+            'adresse': forms.Textarea(attrs={'rows': 3}),
+        }

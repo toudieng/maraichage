@@ -46,7 +46,7 @@
 
         <div class="text-end mt-4">
             <h3>Total du panier : {{ total|floatformat:2 }} F CFA</h3>
-            <a href="{% url 'passer_commande' %}" class="btn btn-success btn-lg mt-3">Passer la commande</a>
+            <a href="{% url 'validation_commande' %}" class="btn btn-success btn-lg mt-3">Passer la commande</a>
         </div>
         <a href="{% url 'liste_produits' %}" class="btn btn-secondary mt-3">Continuer les achats</a>
     {% else %}

@@ -1,7 +1,14 @@
-# marai-chage_ecommerce/paydunya_config.py
+from .paydunya_sdk.checkout import PaydunyaSetup
 
-# Remplacez par vos vraies clés
-PAYDUNYA_MASTER_KEY = 'oyur1x1y-z07c-9GId-RLi5-8fdJZGms2hMw'
-PAYDUNYA_PRIVATE_KEY = 'test_private_TeTacavlljkmIC0JctB3VaPSu6A'
-PAYDUNYA_TOKEN = 'sARPbruEGYpQWApJHFqi'
-PAYDUNYA_API_URL = 'https://app.paydunya.com/sandbox-api/v1/' 
+PaydunyaSetup.configure(
+    master_key = "oyur1x1y-z07c-9GId-RLi5-8fdJZGms2hMw",
+    private_key = "test_private_TeTacavlljkmIC0JctB3VaPSu6A",
+    public_key = "test_public_i0Y7EriVOOHnGl0nRXbfHFQsT1x",
+    token = "sARPbruEGYpQWApJHFqi",
+    mode = "test",
+    store_name = "Naatal Mbay",
+    store_tagline = "Maraichage moderne",
+    store_phone = "221765879303",
+    store_email = "asdieng.elc@gmail.com",
+    store_website_url = "http://localhost:8000/"
+)

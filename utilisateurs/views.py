@@ -4,6 +4,8 @@ from django.contrib import messages # IMPORTANT : Assurez-vous d'importer les me
 from django.contrib.auth.forms import AuthenticationForm 
 # Assurez-vous que InscriptionForm est dans utilisateurs/forms.py
 from .forms import InscriptionForm 
+from django.contrib.auth.decorators import login_required
+from .forms import UtilisateurUpdateForm
 
 
 # =============================================================
@@ -69,3 +71,25 @@ def logout_view(request):
     
     # Redirige vers la page de connexion (nom 'login' dans urls.py)
     return redirect('login')
+
+
+@login_required
+def profil(request):
+    if request.method == 'POST':
+        # Instanciation du formulaire avec les données POST et l'instance d'utilisateur actuelle
+        # Note: request.user est l'instance de votre modèle Utilisateur
+        form = UtilisateurUpdateForm(request.POST, instance=request.user)
+        
+        if form.is_valid():
+            form.save()
+            # Utilisez le système de messages de Django pour une confirmation utilisateur
+            messages.success(request, 'Votre profil a été mis à jour avec succès !')
+            return redirect('profil') # Redirection vers la page profil (pattern name)
+    else:
+        # Instanciation du formulaire pour l'affichage (GET)
+        form = UtilisateurUpdateForm(instance=request.user)
+
+    context = {
+        'form': form
+    }
+    return render(request, 'profil.html', context)

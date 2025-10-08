@@ -11,6 +11,7 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('produits/', include('produits.urls')),
     path('commandes/', include('commandes.urls')),
+    path('utilisateurs/', include('utilisateurs.urls')), 
 
     # AUTHENTIFICATION
     # Les deux noms d'URL pointent vers la même vue qui gère les deux actions (Connexion ET Inscription)

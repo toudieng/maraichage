@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load commandes_extras %}
+
+{% block title %}Détails de la Commande #{{ commande.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Récapitulatif de la Commande #{{ commande.id }}</h1>
+    <p>Statut: {{ commande.get_statut_display }}</p>
+    <p>Montant total: {{ commande.total_prix }} FCFA</p>
+    
+    <h2 class="mt-4">Articles commandés</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Prix Unitaire</th>
+                <th>Prix Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in details %}
+            <tr>
+                <td>{{ detail.produit.nom }}</td>
+                <td>{{ detail.quantite }}</td>
+                <td>{{ detail.prix_unitaire }} FCFA</td>
+                <td>
+                    {% with total_item=detail.prix_unitaire|floatformat:"-2"|multiply:detail.quantite %}
+                        {{ total_item }} FCFA
+                    {% endwith %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <a href="{% url 'home' %}" class="btn btn-primary">Retour à l'accueil</a>
+</div>
+{% endblock %}

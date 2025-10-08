@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load humanize %}
+{% block title %}Validation de votre Commande{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Finalisation de la Commande</h1>
+    <hr>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="row">
+            
+            <div class="col-md-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">1. Informations de Livraison</h4>
+                    </div>
+                    <div class="card-body">
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.telephone.id_for_label }}" class="form-label">{{ form.telephone.label }}</label>
+                            {{ form.telephone | add_class:"form-control" }}
+                            {% for error in form.telephone.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Mode de Saisie de l'Adresse</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="choix_adresse" id="choix_manuelle" value="manuelle" checked>
+                                <label class="form-check-label" for="choix_manuelle">Saisie Manuelle (modifiable)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="choix_adresse" id="choix_carte" value="carte">
+                                <label class="form-check-label" for="choix_carte">Sélection sur Carte (Géolocalisation)</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="adresse_manuelle_container">
+                            <label for="id_adresse" class="form-label">Adresse de Livraison</label>
+                            {{ form.adresse | add_class:"form-control" }}
+                             {% for error in form.adresse.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3" id="adresse_carte_container" style="display:none;">
+                            <div id="map" style="height: 300px; border-radius: 5px;"></div>
+                            <p class="mt-2 text-info small">
+                                Cliquez sur la carte pour définir le point de livraison.
+                                L'adresse textuelle sera automatiquement mise à jour ci-dessous.
+                            </p>
+
+                            <!-- Champ adresse mis à jour automatiquement -->
+                            <input type="text" id="adresse_auto" name="adresse_auto" class="form-control mb-2" placeholder="Adresse détectée..." readonly>
+
+                            <input type="hidden" name="coordonnees_livraison" id="coordonnees_livraison"> 
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h4 class="mb-0">2. Mode de Paiement</h4>
+                    </div>
+                    <div class="card-body">
+                        {{ form.mode_paiement }}
+                        {% for error in form.mode_paiement.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success btn-lg w-100">
+                    Finaliser la Commande ({{ total|floatformat:2|intcomma }} FCFA)
+                </button>
+                <div class="text-center mt-3">
+                    <a href="{% url 'voir_panier' %}">← Retour au Panier</a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                 <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h4 class="mb-0">Récapitulatif de la Commande</h4>
+                    </div>
+                    <div class="card-body">
+                         <ul class="list-group list-group-flush">
+                            {% for item in panier_items %}
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>{{ item.produit_nom }}</span>
+                                    <span>{{ item.quantite }} x {{ item.prix|floatformat:0 }} FCFA</span>
+                                </li>
+                            {% endfor %}
+                            <li class="list-group-item d-flex justify-content-between fw-bold bg-light">
+                                <span>Total à Payer</span>
+                                <span>{{ total|floatformat:2|intcomma }} FCFA</span>
+                            </li>
+                        </ul>
+                    </div>
+                 </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- ✅ Import Leaflet (sans integrity ni crossorigin pour éviter les blocages) -->
+<link 
+  rel="stylesheet" 
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script 
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const defaultCenter = [14.6928, -17.4467]; // Dakar par défaut
+    let map = null;
+    let marker = null;
+
+    const champAdresseManuelle = document.getElementById('id_adresse');
+    const champAdresseAuto = document.getElementById('adresse_auto');
+    const coordonneesInput = document.getElementById('coordonnees_livraison');
+
+    // Fonction de géocodage inverse
+    function reverseGeocode(lat, lon) {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
+            .then(response => response.json())
+            .then(data => {
+                const adresse = data.display_name || `Coordonnées : ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+                champAdresseAuto.value = adresse;
+                champAdresseManuelle.value = adresse; // Remplit aussi le champ Django
+                coordonneesInput.value = `${lat},${lon}`;
+                if (marker) marker.bindPopup(adresse).openPopup();
+            })
+            .catch(err => {
+                console.error("Erreur géocodage inverse :", err);
+                champAdresseAuto.value = "Adresse introuvable";
+            });
+    }
+
+    // Basculer entre les deux modes (manuel / carte)
+    function toggleAdresseMode(initial = false) {
+        const manuelle = document.getElementById('choix_manuelle');
+        const containerManuelle = document.getElementById('adresse_manuelle_container');
+        const containerCarte = document.getElementById('adresse_carte_container');
+
+        if (manuelle.checked) {
+            containerManuelle.style.display = 'block';
+            containerCarte.style.display = 'none';
+        } else {
+            containerManuelle.style.display = 'none';
+            containerCarte.style.display = 'block';
+
+            if (!map) {
+                // Initialiser la carte
+                map = L.map('map').setView(defaultCenter, 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+
+                // Événement de clic sur la carte
+                map.on('click', e => {
+                    const lat = e.latlng.lat;
+                    const lon = e.latlng.lng;
+                    if (marker) map.removeLayer(marker);
+                    marker = L.marker([lat, lon]).addTo(map);
+                    reverseGeocode(lat, lon);
+                });
+
+                marker = L.marker(defaultCenter)
+                    .addTo(map)
+                    .bindPopup("Cliquez pour définir votre point de livraison");
+            }
+
+            // Corrige le rendu de la carte après affichage
+            setTimeout(() => map.invalidateSize(), initial ? 800 : 300);
+        }
+    }
+
+    document.getElementById('choix_manuelle').addEventListener('change', toggleAdresseMode);
+    document.getElementById('choix_carte').addEventListener('change', toggleAdresseMode);
+    toggleAdresseMode(true);
+});
+</script>
+{% endblock %}
