@@ -1,4 +1,6 @@
 {% load static %}
+{% load widget_tweaks %}
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -72,7 +74,7 @@
 
   <div class="mb-3">
     <label for="id_username" class="form-label">Nom d'utilisateur</label>
-    {{ form.username }}
+    {{ form.username|add_class:"form-control" }}
     {% for error in form.username.errors %}
       <div class="text-danger">{{ error }}</div>
     {% endfor %}
@@ -103,7 +105,7 @@
 
   <div class="mb-3">
     <label for="id_username" class="form-label">Nom d'utilisateur</label>
-    {{ register_form.username }}
+    {{ register_form.username|add_class:"form-control" }} 
     {% for error in register_form.username.errors %}
       <div class="text-danger">{{ error }}</div>
     {% endfor %}

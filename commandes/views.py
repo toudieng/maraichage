@@ -1,14 +1,17 @@
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Panier, Details_panier, Produit, Commande, Details_commande
 from produits.utils import get_prix_actuel
 from django.db import transaction
+from django.db.models import F
 from django.urls import reverse
 import requests
 import json
 from .forms import ValidationCommandeForm
-from django.contrib import messages 
+from .forms import StatutCommandeForm 
+from django.contrib import messages
+from utilisateurs.views import is_livreur
 from maraichage_ecommerce.paydunya_sdk.checkout import CheckoutInvoice, PaydunyaSetup 
 
 @login_required
@@ -359,12 +362,13 @@ def validation_commande(request):
         messages.error(request, "Votre panier est vide.")
         return redirect('voir_panier')
 
-    total = 0
+    total = 0.0
     items_for_paydunya = []
     
     for item in details_du_panier:
         # Assurez-vous que get_prix_actuel retourne un nombre (int ou float)
         prix_actuel = get_prix_actuel(item.produit)
+        prix_actuel = float(prix_actuel) 
         item.prix_unitaire_actuel = prix_actuel
         item.prix_total_item = prix_actuel * item.quantite
         total += item.prix_total_item
@@ -394,14 +398,33 @@ def validation_commande(request):
             utilisateur.telephone = telephone
             utilisateur.adresse = adresse
             utilisateur.save() 
+
+            stock_insuffisant = False
+            produits_en_erreur = []
+
+            for item in details_du_panier:
+                # Récupère le produit avec son stock actuel (à jour)
+                produit = item.produit 
+                
+                if item.quantite > produit.stock:
+                    stock_insuffisant = True
+                    produits_en_erreur.append(f"{produit.nom} (Stock: {produit.stock}, Demandé: {item.quantite})")
+            
+            # Si le stock est insuffisant, affiche un message et annule la création de la commande
+            if stock_insuffisant:
+                messages.error(request, f"Stock insuffisant pour les produits suivants : {', '.join(produits_en_erreur)}. Veuillez ajuster les quantités dans votre panier.")
+                return redirect('voir_panier') # Redirige l'utilisateur vers son panier pour corriger
+            # 🚨 FIN DU BLOC DE VÉRIFICATION
             
             try:
                 with transaction.atomic():
+                    mode_paiement = form.cleaned_data['mode_paiement']
+                    statut_initial = 'en_attente_livraison' if mode_paiement == 'paiement_livraison' else 'en_attente'
                     # Création de la Commande
                     commande = Commande.objects.create(
                         utilisateur=utilisateur,
                         total_prix=total,
-                        statut='en_attente',
+                        statut=statut_initial,
                         adresse_livraison=adresse,
                         telephone_livraison=telephone,
                         mode_paiement=mode_paiement, 
@@ -415,6 +438,9 @@ def validation_commande(request):
                             prix_unitaire=item.prix_unitaire_actuel,
                             quantite=item.quantite
                         )
+
+                    item.produit.stock = F('stock') - item.quantite
+                    item.produit.save(update_fields=['stock'])
                     
                     # 3. LOGIQUE CONDITIONNELLE SELON LE MODE DE PAIEMENT
                     
@@ -456,18 +482,17 @@ def validation_commande(request):
                             return redirect(checkout_url)
                         else:
                             messages.error(request, f"Échec de l'initialisation du paiement PayDunya : {invoice.response_text}")
+                            commande.statut = 'annulee'
+                            commande.save()
                             return redirect('echec_paiement') 
                             
                     elif mode_paiement == 'paiement_livraison': # 🚨 Corrigé : utilise la clé 'paiement_livraison'
-                        # Paiement à la livraison
-                        commande.statut = 'en_attente_livraison' 
-                        commande.save()
                         # Vider le panier
                         details_du_panier.delete() 
                         panier.delete()
                         messages.success(request, "Votre commande a été enregistrée. Paiement à la livraison sélectionné.")
                         # Redirection vers les détails de la commande ou la confirmation
-                        return redirect('commande_details', pk=commande.id)
+                        return redirect('details_commande', commande_id=commande.id)
 
             except Exception as e:
                 print(f"Erreur fatale lors du traitement de la commande : {e}")
@@ -490,3 +515,106 @@ def validation_commande(request):
         'total': total
     }
     return render(request, 'validation_commande.html', context)
+
+
+
+
+# Fonction utilitaire pour vérifier si l'utilisateur est un staff (administrateur)
+def is_staff_user(user):
+    return user.is_staff
+
+# @login_required
+# @user_passes_test(is_staff_user) # 🚨 Sécurité : seul le personnel (staff) peut y accéder
+# def tableau_bord_commandes(request):
+#     """
+#     Affiche la liste de toutes les commandes pour l'administration.
+#     """
+#     # Récupère toutes les commandes, triées par date (récentes en premier)
+#     commandes = Commande.objects.all().order_by('-date_commande')
+
+#     # Filtrage rapide pour les commandes en attente (par exemple)
+#     commandes_en_attente = Commande.objects.filter(statut='en_attente').order_by('-date_commande')
+
+#     context = {
+#         'commandes': commandes,
+#         'commandes_en_attente': commandes_en_attente,
+#     }
+#     return render(request, 'tableau_bord_commandes.html', context)
+
+
+@login_required
+@user_passes_test(is_staff_user)
+def tableau_bord_commandes(request):
+    commandes_qs = Commande.objects.all().order_by('-date_commande')
+
+    commandes_data = []
+    for commande in commandes_qs:
+        statut_form = StatutCommandeForm(instance=commande)
+        commandes_data.append({
+            'commande': commande,
+            'statut_form': statut_form,
+        })
+
+    context = {
+        'commandes_data': commandes_data,
+    }
+    return render(request, 'tableau_bord_commandes.html', context)
+
+@login_required
+@user_passes_test(is_staff_user)
+def mettre_a_jour_statut(request, commande_id):
+    """
+    Met à jour le statut d'une commande spécifique via une requête POST.
+    """
+    commande = get_object_or_404(Commande, id=commande_id)
+
+    if request.method == 'POST':
+        nouveau_statut = request.POST.get('statut')
+        
+        # Vérification simple pour s'assurer que le statut est valide (selon vos choix)
+        statuts_valides = [choix[0] for choix in Commande.STATUT_CHOICES] # Assurez-vous que ceci fonctionne
+        
+        if nouveau_statut and nouveau_statut in statuts_valides:
+            commande.statut = nouveau_statut
+            commande.save()
+            messages.success(request, f"Le statut de la commande N°{commande.id} a été mis à jour à '{commande.get_statut_display()}'.")
+        else:
+            messages.error(request, "Statut invalide ou manquant.")
+            
+    # Redirige toujours vers le tableau de bord
+    return redirect('tableau_bord_commandes') 
+
+# commandes/views.py
+
+@login_required
+@user_passes_test(is_livreur)
+def valider_livraison(request, commande_id):
+    commande = get_object_or_404(Commande, id=commande_id)
+
+    if request.method == 'POST':
+        nouveau_statut = request.POST.get('statut')
+        
+        # 🚨 Restreindre le changement de statut !
+        if nouveau_statut == 'livree':
+            commande.statut = 'livree'
+            commande.save()
+            messages.success(request, f"La livraison de la commande N°{commande.id} a été confirmée.")
+        else:
+            messages.error(request, "Seul le statut 'Livrée' est autorisé.")
+            
+        return redirect('tableau_de_bord_livreur') # Une autre page d'accueil
+    
+    # Rendre le formulaire de confirmation (une page simple)
+    return render(request, 'livreur/confirmation_livraison.html', {'commande': commande})
+
+@login_required
+@user_passes_test(is_livreur) # Protégé uniquement pour les livreurs
+def tableau_de_bord_livreur(request):
+    # 🚨 Logique: Afficher les commandes que le livreur doit potentiellement livrer.
+    # Dans l'exemple, on affiche toutes les commandes 'validée' (prêtes à l'envoi)
+    commandes_a_livrer = Commande.objects.filter(statut='validée').order_by('date_commande')
+
+    context = {
+        'commandes_a_livrer': commandes_a_livrer
+    }
+    return render(request, 'livreur/dashboard_livreur.html', context)

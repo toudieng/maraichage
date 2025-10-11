@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Mon Compte{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Gestion de Mon Compte</h1>
+    <hr>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">
+                        <i class="fas fa-user-circle me-2"></i> Mon Profil
+                    </h5>
+                    <p class="card-text">
+                        Gérez et mettez à jour vos informations personnelles, votre téléphone et votre adresse de livraison.
+                    </p>
+                    <a href="{% url 'profil' %}" class="btn btn-primary mt-3">
+                        Voir/Modifier le Profil
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-success">
+                        <i class="fas fa-history me-2"></i> Mes Commandes
+                    </h5>
+                    <p class="card-text">
+                        Consultez l'historique de toutes vos commandes, leur statut et leurs détails.
+                    </p>
+                    <a href="{% url 'historique_commandes' %}" class="btn btn-success mt-3">
+                        Voir l'Historique
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

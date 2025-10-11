@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmation de Livraison{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Confirmer la Livraison de la Commande N°{{ commande.id }}</h1>
+    
+    <p>Client : {{ commande.utilisateur.get_full_name }}</p>
+    <p>Adresse de livraison : {{ commande.adresse_livraison }}</p>
+    <p>Total : {{ commande.total_prix|floatformat:0 }} FCFA</p>
+    
+    <hr>
+
+    <h2>Action du Livreur</h2>
+    <p>Utilisez ce bouton uniquement après avoir reçu le paiement et remis les marchandises au client.</p>
+
+    <form method="POST" action="{% url 'valider_livraison' commande_id=commande.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="statut" value="livree">
+        
+        <button type="submit" class="btn btn-success btn-lg">
+            Confirmer la Livraison et Marquer comme Livrée
+        </button>
+    </form>
+    
+    <a href="{% url 'tableau_de_bord_livreur' %}" class="btn btn-secondary mt-3">Retour au Tableau de Bord</a>
+</div>
+{% endblock %}

@@ -6,6 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from .forms import InscriptionForm 
 from django.contrib.auth.decorators import login_required
 from .forms import UtilisateurUpdateForm
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 
 # =============================================================
@@ -13,51 +14,38 @@ from .forms import UtilisateurUpdateForm
 # =============================================================
 
 def connexion_inscription(request):
-    # Initialisation des formulaires pour le rendu GET ou en cas d'erreur
-    login_form = AuthenticationForm()
-    register_form = InscriptionForm()
+    login_form = AuthenticationForm(prefix='login')
+    register_form = InscriptionForm(prefix='register')
 
     if request.method == 'POST':
-        
-        # --- 1. Tentative de CONNEXION ---
         if 'login' in request.POST:
-            # Note: AuthenticationForm doit être instancié avec 'request' pour la session/authentification
-            login_form = AuthenticationForm(request, data=request.POST) 
-            
+            login_form = AuthenticationForm(request, data=request.POST, prefix='login')
             if login_form.is_valid():
                 user = login_form.get_user()
                 login(request, user)
-                messages.success(request, f"Bienvenue, {user.username} ! Vous êtes connecté en tant que {user.role}.")
-                
-                # La vérification du rôle DOIT rester ici pour les administrateurs existants
+                messages.success(request, f"Bienvenue, {user.username} !")
                 if user.role == 'Administrateur':
-                    return redirect('admin_dashboard') 
-                
-                return redirect('home') 
-            
+                    return redirect('tableau_bord_commandes')
+                elif user.role == 'Livreur':
+                    return redirect('tableau_de_bord_livreur')
+                return redirect('home')
             else:
                 messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
-                
-        # --- 2. Tentative d'INSCRIPTION ---
         elif 'register' in request.POST:
-            register_form = InscriptionForm(request.POST)
-            
+            register_form = InscriptionForm(request.POST, prefix='register')
             if register_form.is_valid():
                 user = register_form.save()
                 login(request, user)
-                messages.success(request, "Inscription réussie. Vous êtes maintenant connecté.")
-                
-                # Simplification : Le rôle est toujours 'Client' ici, donc on redirige directement vers 'home'
-                return redirect('home') 
-            
+                messages.success(request, "Inscription réussie.")
+                return redirect('home')
             else:
-                messages.error(request, "Erreur lors de l'inscription. Veuillez corriger les erreurs.")
+                messages.error(request, "Erreur lors de l'inscription.")
                 
-    # Rendu du template. IMPORTANT : utilise 'form' pour la connexion, comme dans votre template corrigé
     return render(request, 'authentification/connexion.html', {
-        'form': login_form, 
+        'form': login_form,
         'register_form': register_form,
     })
+
 
 
 # =============================================================
@@ -93,3 +81,17 @@ def profil(request):
         'form': form
     }
     return render(request, 'profil.html', context)
+
+@login_required
+def hub_compte(request):
+    """
+    Page d'accueil de l'espace utilisateur (Mon Compte).
+    Sert de hub pour la navigation vers le profil et l'historique des commandes.
+    """
+    return render(request, 'hub_compte.html')
+
+
+
+def is_livreur(user):
+    # Assurez-vous que le rôle 'Livreur' est défini dans votre modèle Utilisateur
+    return user.role == 'Livreur'

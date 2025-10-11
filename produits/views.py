@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from .models import Produit
 from .utils import get_prix_actuel
+from django.shortcuts import get_object_or_404
 
 def liste_produits(request):
     produits = Produit.objects.all()
@@ -11,3 +12,16 @@ def liste_produits(request):
         liste_avec_prix_saisonniers.append(produit)
         
     return render(request, 'produits/liste_produits.html', {'produits': liste_avec_prix_saisonniers})
+
+
+def details_produit(request, produit_id):
+    """
+    Affiche les détails d'un produit spécifique, y compris son stock.
+    """
+    # Utilise get_object_or_404 pour gérer le cas où le produit n'existe pas
+    produit = get_object_or_404(Produit, id=produit_id)
+    
+    context = {
+        'produit': produit,
+    }
+    return render(request, 'produits/details_produit.html', context)

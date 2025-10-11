@@ -4,10 +4,12 @@ from django.contrib.auth.models import AbstractUser
 class Utilisateur(AbstractUser):
     ADMINISTRATEUR = 'Administrateur'
     CLIENT = 'Client'
+    LIVREUR = 'Livreur'
 
     ROLE_CHOICES = [
         (ADMINISTRATEUR, 'Administrateur'),
         (CLIENT, 'Client'),
+        (LIVREUR, 'Livreur'),
     ]
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=CLIENT)

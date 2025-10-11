@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load produits_extras %} 
+
+{% block title %}Détails de {{ produit.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="bg-light p-5 text-center">
+                [Image du produit]
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <h1>{{ produit.nom }}</h1>
+            
+            <p class="lead fw-bold text-success display-6 mt-3">
+                {{ produit|prix_actuel }} FCFA
+            </p>
+            
+            <p>{{ produit.description|linebreaks }}</p>
+            
+            <hr>
+            
+            <div class="mb-4">
+                {% if produit.stock > 0 %}
+                    <p class="text-success fs-5">
+                        <i class="fas fa-check-circle me-2"></i> **{{ produit.stock }}** unités disponibles en stock.
+                    </p>
+                {% else %}
+                    <p class="text-danger fs-5">
+                        <i class="fas fa-times-circle me-2"></i> Rupture de stock.
+                    </p>
+                {% endif %}
+            </div>
+
+            <form action="{% url 'ajouter_au_panier' produit_id=produit.id %}" method="POST" class="d-flex">
+                {% csrf_token %}
+                <input type="number" name="quantite" value="1" min="1" max="{% if produit.stock > 0 %}{{ produit.stock }}{% else %}0{% endif %}" class="form-control me-2" style="width: 100px;">
+                
+                {% if produit.stock > 0 %}
+                    <button type="submit" class="btn btn-warning btn-lg">
+                        <i class="fas fa-cart-plus me-2"></i> Ajouter au Panier
+                    </button>
+                {% else %}
+                    <button type="button" class="btn btn-secondary btn-lg" disabled>
+                        Indisponible
+                    </button>
+                {% endif %}
+            </form>
+
+            <a href="{% url 'liste_produits' %}" class="btn btn-outline-secondary mt-3">
+                Retour aux produits
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

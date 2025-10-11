@@ -38,3 +38,13 @@ class ValidationCommandeForm(forms.Form):
         if user_instance:
             self.fields['telephone'].initial = getattr(user_instance, 'telephone', '')
             self.fields['adresse'].initial = getattr(user_instance, 'adresse', '')
+
+class StatutCommandeForm(forms.ModelForm):
+    class Meta:
+        model = Commande
+        # Nous incluons SEULEMENT le champ 'statut', qui contient les choix.
+        fields = ['statut'] 
+        widgets = {
+            # Optionnel : Ajoute une classe Bootstrap pour le style
+            'statut': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+        }

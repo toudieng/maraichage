@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load produits_extras %} 
 
 {% block title %}Liste des Produits{% endblock %}
 
@@ -6,15 +7,30 @@
     <h1>Nos Produits Maraîchers</h1>
     <div class="row row-cols-1 row-cols-md-3 g-4">
         {% for produit in produits %}
-            <div class="col">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ produit.nom }}</h5>
-                        <p class="card-text">{{ produit.description }}</p>
-                        <p class="card-text"><strong>Prix actuel : {{ produit.prix_actuel }} F CFA</strong></p>
-                        <form action="{% url 'ajouter_au_panier' produit.id %}" method="post">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    
+                    <a href="{% url 'details_produit' produit_id=produit.id %}" class="text-decoration-none text-dark">
+                        <div class="card-img-top bg-light text-center p-5">
+                            <img src="{{ Produit.image.url }}" class="card-img-top" alt="{{ plat.nom }}" style="max-height: 200px; object-fit: cover;">
+                        </div>
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ produit.nom }}</h5>
+                        </div>
+                    </a>
+                    
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <span class="fs-4 fw-bold text-primary">{{ produit|prix_actuel }} FCFA</span>
+                        
+                        <form action="{% url 'ajouter_au_panier' produit_id=produit.id %}" method="POST">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-success">Ajouter au panier</button>
+                            
+                            {% if produit.stock > 0 %}
+                                <button type="submit" class="btn btn-warning btn-sm">Ajouter</button>
+                            {% else %}
+                                <button type="button" class="btn btn-secondary btn-sm" disabled>Rupture</button>
+                            {% endif %}
                         </form>
                     </div>
                 </div>

@@ -11,4 +11,10 @@ urlpatterns = [
     path('paiement-success/', views.paiement_success, name='paiement_success'),
     path('details/<int:commande_id>/', views.details_commande, name='details_commande'),
     path('historique/', views.historique_commandes, name='historique_commandes'),
+
+    path('gestion/', views.tableau_bord_commandes, name='tableau_bord_commandes'),
+    path('gestion/update_statut/<int:commande_id>/', views.mettre_a_jour_statut, name='mettre_a_jour_statut'),
+
+    path('livreur/dashboard/', views.tableau_de_bord_livreur, name='tableau_de_bord_livreur'),
+    path('livreur/valider/<int:commande_id>/', views.valider_livraison, name='valider_livraison'),
 ]

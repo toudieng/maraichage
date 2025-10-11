@@ -14,7 +14,7 @@ class Produit(models.Model):
     prix_saison_seche = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     prix_saison_pluies = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     image = models.ImageField(upload_to='produits/', blank=True, null=True)
-    stock = models.IntegerField()
+    stock = models.IntegerField(default=0)
     categorie = models.ForeignKey(Categorie, on_delete=models.CASCADE)
 
     def __str__(self):

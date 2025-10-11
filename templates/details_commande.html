@@ -6,8 +6,44 @@
 {% block content %}
 <div class="container mt-5">
     <h1>Récapitulatif de la Commande #{{ commande.id }}</h1>
-    <p>Statut: {{ commande.get_statut_display }}</p>
-    <p>Montant total: {{ commande.total_prix }} FCFA</p>
+        <!-- <p>Statut: {{ commande.get_statut_display }}</p>
+        <p>Montant total: {{ commande.total_prix }} FCFA</p> -->
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">Statut & Total</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <strong>Statut:</strong> {{ commande.get_statut_display }}
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Montant total:</strong> {{ commande.total_prix }} FCFA
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Mode de paiement:</strong> {{ commande.get_mode_paiement_display }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">Adresse de Livraison</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <strong>Téléphone:</strong> {{ commande.telephone_livraison }}
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Adresse:</strong> {{ commande.adresse_livraison }}
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Client:</strong> {{ commande.utilisateur.get_full_name|default:commande.utilisateur.username }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
     
     <h2 class="mt-4">Articles commandés</h2>
     <table class="table">

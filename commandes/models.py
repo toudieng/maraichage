@@ -32,6 +32,19 @@ class Commande(models.Model):
         default='paydunya'
     )
 
+    STATUT_CHOICES = [
+        ('en_attente', 'En attente de paiement'),
+        ('validée', 'Validée et en préparation'),
+        ('annulee', 'Annulée'),
+        ('livree', 'Livrée'),
+    ]
+
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT_CHOICES,
+        default='en_attente' # Valeur par défaut
+    )
+
 class Details_commande(models.Model):
     commande = models.ForeignKey(Commande, on_delete=models.CASCADE)
     produit = models.ForeignKey(Produit, on_delete=models.CASCADE)
