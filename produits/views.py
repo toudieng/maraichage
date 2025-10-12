@@ -2,6 +2,8 @@ from django.shortcuts import render
 from .models import Produit
 from .utils import get_prix_actuel
 from django.shortcuts import get_object_or_404
+from .serializers import ProduitSerializer
+from rest_framework import generics
 
 def liste_produits(request):
     produits = Produit.objects.all()
@@ -25,3 +27,8 @@ def details_produit(request, produit_id):
         'produit': produit,
     }
     return render(request, 'produits/details_produit.html', context)
+
+class ProduitListAPIView(generics.ListAPIView):
+    # Ceci récupère tous les objets Produit de la base de données
+    queryset = Produit.objects.all() 
+    serializer_class = ProduitSerializer

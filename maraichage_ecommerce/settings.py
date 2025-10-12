@@ -21,6 +21,11 @@ ALLOWED_HOSTS = [
     '6bfc9b81f387.ngrok-free.app',
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173", # Votre serveur de dev Vite
+    "http://127.0.0.1:5173",
+]
+
 
 # Application definition
 
@@ -38,9 +43,13 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     'django.contrib.humanize',
     'widget_tweaks',
+    'rest_framework',        # Ajouté : Pour les APIs
+    'corsheaders',           # Ajouté : Pour gérer les requêtes cross-origin
 ]
 
 MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware', # DOIT être la première application après SecurityMiddleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -121,6 +130,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# if settings.DEBUG:
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

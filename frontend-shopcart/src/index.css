@@ -1,0 +1,7 @@
+/*
+  Ceci est le point d'entrée CSS qui injecte les styles de base,
+  des composants et des utilitaires de Tailwind CSS.
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

@@ -5,6 +5,8 @@ from django.urls import path, include
 from . import views # Pour la vue 'home'
 from django.contrib.auth import views as auth_views 
 from utilisateurs import views as user_views # Importez les vues utilisateurs
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -36,4 +38,4 @@ urlpatterns = [
     path('mot-de-passe/reset/termine/', 
          auth_views.PasswordResetCompleteView.as_view(template_name='authentification/reinitialisation_password_terminer.html'), 
          name='password_reset_complete'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
