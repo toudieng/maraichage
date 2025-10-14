@@ -1,7 +1,36 @@
+/* src/index.css */
+
+/* Si tu utilises Tailwind v4 avec @import */
+@import "tailwindcss";
+
+
+
+/* OU si tu utilises Tailwind v3 (recommandé pour plus de stabilité) */
+/* Décommente les 3 lignes ci-dessous et commente la ligne @import ci-dessus */
 /*
-  Ceci est le point d'entrée CSS qui injecte les styles de base,
-  des composants et des utilitaires de Tailwind CSS.
-*/
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+*/
+
+/* Reset global */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Supprimer les styles par défaut de App.css qui peuvent interférer */
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}

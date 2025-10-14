@@ -26,6 +26,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+
+# Sessions
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False  # True en production avec HTTPS
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # Application definition
 
