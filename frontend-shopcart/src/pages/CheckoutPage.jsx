@@ -1,21 +1,38 @@
 // src/pages/CheckoutPage.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
 
 const CheckoutPage = () => {
-  const { cart, clearCart } = useCart();
+  const { cartItems, clearCart } = useCart();
   const navigate = useNavigate();
+
   const [form, setForm] = useState({
     telephone: '',
     adresse: '',
     mode_paiement: 'paiement_livraison',
   });
+
+  const [position, setPosition] = useState([14.7645, -17.3660]); // Position par défaut (Dakar)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const total = cart.reduce((sum, item) => sum + item.prix_total, 0);
+  const total = cartItems.reduce((sum, item) => sum + Number(item.prix_total || 0), 0);
+
+  useEffect(() => {
+    axios.get('http://localhost:8000/api/user/', {
+      withCredentials: true,
+    })
+    .then(res => {
+      setForm(prev => ({ ...prev, telephone: res.data.telephone || '' }));
+    })
+    .catch(err => {
+      console.error('Erreur utilisateur :', err);
+    });
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -24,14 +41,28 @@ const CheckoutPage = () => {
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
+
+    const payload = {
+      ...form,
+      latitude: position[0],
+      longitude: position[1],
+      produits: cartItems.map(item => ({
+        id: item.id,
+        produit_id: item.produit_id || item.produit,
+        quantite: item.quantite,
+        prix_unitaire: item.prix_unitaire,
+        prix_total: item.prix_total,
+      })),
+    };
+
     try {
-      const res = await axios.post('http://localhost:8000/api/commande/valider/', form, {
+      const res = await axios.post('http://localhost:8000/api/commande/valider/', payload, {
         withCredentials: true,
       });
 
       if (res.data.success) {
         if (res.data.checkout_url) {
-          window.location.href = res.data.checkout_url; // Redirection PayDunya
+          window.location.href = res.data.checkout_url;
         } else {
           clearCart();
           navigate(`/commande/${res.data.commande_id}`);
@@ -47,19 +78,45 @@ const CheckoutPage = () => {
     }
   };
 
+  const DraggableMarker = () => {
+    const map = useMapEvents({
+      click(e) {
+        setPosition([e.latlng.lat, e.latlng.lng]);
+      },
+    });
+
+    return (
+      <Marker
+        position={position}
+        draggable={true}
+        eventHandlers={{
+          dragend: (e) => {
+            const { lat, lng } = e.target.getLatLng();
+            setPosition([lat, lng]);
+          },
+        }}
+        icon={L.icon({
+          iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+        })}
+      />
+    );
+  };
+
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
       <h2 className="text-2xl font-bold mb-4">Validation de la commande</h2>
 
-      {cart.length === 0 ? (
+      {cartItems.length === 0 ? (
         <p>Votre panier est vide.</p>
       ) : (
         <>
           <ul className="mb-6">
-            {cart.map(item => (
+            {cartItems.map(item => (
               <li key={item.id} className="flex justify-between py-2 border-b">
                 <span>{item.produit} x {item.quantite}</span>
-                <span>{item.prix_total.toFixed(2)} €</span>
+                <span>{Number(item.prix_total || 0).toFixed(2)} €</span>
               </li>
             ))}
           </ul>
@@ -74,15 +131,28 @@ const CheckoutPage = () => {
               value={form.telephone}
               onChange={handleChange}
               className="w-full border px-4 py-2 rounded"
+              disabled
             />
+
             <input
               type="text"
               name="adresse"
-              placeholder="Adresse de livraison"
+              placeholder="Adresse (optionnelle)"
               value={form.adresse}
               onChange={handleChange}
               className="w-full border px-4 py-2 rounded"
             />
+
+            <div className="h-64 rounded-lg overflow-hidden border">
+              <MapContainer center={position} zoom={13} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <DraggableMarker />
+              </MapContainer>
+            </div>
+
             <select
               name="mode_paiement"
               value={form.mode_paiement}

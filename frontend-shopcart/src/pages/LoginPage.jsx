@@ -27,7 +27,7 @@ const LoginPage = () => {
       const data = await response.json();
       if (response.ok && data.success) {
         showToast(data.message || 'Connexion réussie !');
-        navigate('/panier');
+        navigate('/');
       } else {
         showToast(data.error || 'Identifiants incorrects', 'error');
       }

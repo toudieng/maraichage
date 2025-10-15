@@ -1,4 +1,3 @@
-// src/context/CartContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -27,7 +26,7 @@ export const CartProvider = ({ children }) => {
       const response = await axios.get(`${API_BASE_URL}/panier/`, {
         withCredentials: true,
       });
-      setCartItems(response.data.panier || []); // ✅ correction ici
+      setCartItems(response.data.panier || []);
     } catch (error) {
       console.error('Erreur lors du chargement du panier:', error);
       const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -116,7 +115,7 @@ export const CartProvider = ({ children }) => {
   };
 
   const value = {
-    cartItems,
+    cartItems, // ✅ exposé explicitement
     loading,
     addToCart,
     removeFromCart,

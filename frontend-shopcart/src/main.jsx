@@ -8,6 +8,7 @@ import { CartProvider } from './context/CartContext.jsx'
 import CheckoutPage from './pages/CheckoutPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import './index.css'
+import 'leaflet/dist/leaflet.css';
 
 import ErrorBoundary from './components/ErrorBoundary';
 

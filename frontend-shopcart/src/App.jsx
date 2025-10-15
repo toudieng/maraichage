@@ -1,5 +1,6 @@
 // src/App.jsx
 import { useState, useEffect } from 'react';
+import React from 'react';
 import axios from 'axios';
 import ProductCard from './components/ProductCard';
 import { useCart } from './context/CartContext';

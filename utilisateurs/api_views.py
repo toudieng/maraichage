@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 
 @csrf_exempt
 def api_login(request):
@@ -15,3 +16,15 @@ def api_login(request):
         else:
             return JsonResponse({'success': False, 'error': 'Identifiants incorrects'}, status=401)
     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+
+
+@login_required
+def api_user_info(request):
+    user = request.user
+    return JsonResponse({
+        'username': user.username,
+        'email': user.email,
+        'telephone': getattr(user, 'telephone', ''),
+        'nom_complet': user.get_full_name(),
+    })
+
