@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
+import { Link, useNavigate } from 'react-router-dom';
 
 const RegisterPage = () => {
   const [username, setUsername] = useState('');
@@ -55,6 +55,12 @@ const RegisterPage = () => {
         <input type="password" placeholder="Confirmer le mot de passe" value={password2} onChange={(e) => setPassword2(e.target.value)} required className="w-full px-4 py-3 border rounded-lg" />
         <button type="submit" className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition">S'inscrire</button>
       </form>
+      <p className="text-center text-sm mt-4">
+        Vous avez déjà un compte ?{' '}
+        <Link to="/connexion" className="text-green-600 hover:underline">
+          Connectez-vous
+        </Link>
+      </p>
     </div>
   );
 };

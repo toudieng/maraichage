@@ -11,9 +11,14 @@ urlpatterns = [
 
     # Commande
     path('api/commande/valider/', api_views.api_valider_commande),
-    path('api/commande/details/<int:commande_id>/', api_views.api_details_commande),
-    path('api/commande/historique/', api_views.api_historique_commandes),
+    #path('api/commande/details/<int:commande_id>/', api_views.api_details_commande),
+    #path('api/commande/historique/', api_views.api_historique_commandes),
+    path('api/commande/<int:id>/', api_views.api_commande_detail, name='api_commande_detail'),
+    path('api/mes-commandes/', api_views.api_historique_commandes, name='api_historique_commandes'),
+
+
 
     # Paiement
     path('api/commande/webhook/', api_views.api_paydunya_webhook),
+    path('api/commande/<int:id>/facture/', api_views.api_facture_commande, name='api_facture_commande'),
 ]

@@ -1,10 +1,10 @@
-// src/pages/CheckoutPage.jsx
 import { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const CheckoutPage = () => {
   const { cartItems, clearCart } = useCart();
@@ -16,7 +16,7 @@ const CheckoutPage = () => {
     mode_paiement: 'paiement_livraison',
   });
 
-  const [position, setPosition] = useState([14.7645, -17.3660]); // Position par défaut (Dakar)
+  const [position, setPosition] = useState([14.7645, -17.3660]); // Dakar par défaut
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,6 +34,18 @@ const CheckoutPage = () => {
     });
   }, []);
 
+  const fetchAddressFromCoords = async (lat, lng) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await res.json();
+      if (data?.display_name) {
+        setForm(prev => ({ ...prev, adresse: data.display_name }));
+      }
+    } catch (err) {
+      console.error("Erreur reverse geocoding :", err);
+    }
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -43,16 +55,11 @@ const CheckoutPage = () => {
     setError('');
 
     const payload = {
-      ...form,
+      telephone: form.telephone,
+      adresse: form.adresse,
+      mode_paiement: form.mode_paiement,
       latitude: position[0],
       longitude: position[1],
-      produits: cartItems.map(item => ({
-        id: item.id,
-        produit_id: item.produit_id || item.produit,
-        quantite: item.quantite,
-        prix_unitaire: item.prix_unitaire,
-        prix_total: item.prix_total,
-      })),
     };
 
     try {
@@ -63,25 +70,28 @@ const CheckoutPage = () => {
       if (res.data.success) {
         if (res.data.checkout_url) {
           window.location.href = res.data.checkout_url;
-        } else {
+        } else if (res.data.commande_id) {
           clearCart();
           navigate(`/commande/${res.data.commande_id}`);
+        } else {
+          setError("Commande validée mais aucune redirection fournie.");
         }
       } else {
         setError(res.data.error || 'Erreur inconnue');
       }
     } catch (err) {
-      setError('Erreur lors de la validation');
-      console.error(err);
+      console.error('Erreur lors de la validation :', err);
+      setError('Erreur lors de la validation de la commande');
     } finally {
       setLoading(false);
     }
   };
 
   const DraggableMarker = () => {
-    const map = useMapEvents({
+    useMapEvents({
       click(e) {
         setPosition([e.latlng.lat, e.latlng.lng]);
+        fetchAddressFromCoords(e.latlng.lat, e.latlng.lng);
       },
     });
 
@@ -93,6 +103,7 @@ const CheckoutPage = () => {
           dragend: (e) => {
             const { lat, lng } = e.target.getLatLng();
             setPosition([lat, lng]);
+            fetchAddressFromCoords(lat, lng);
           },
         }}
         icon={L.icon({

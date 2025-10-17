@@ -25,6 +25,9 @@ class Commande(models.Model):
     transaction_id = models.CharField(max_length=100, blank=True, null=True)
     adresse_livraison = models.CharField(max_length=255, null=True, blank=True)
     telephone_livraison = models.CharField(max_length=20, null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+
 
     mode_paiement = models.CharField(
         max_length=50, 

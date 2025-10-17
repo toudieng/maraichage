@@ -7,6 +7,11 @@ import CartPage from './pages/CartPage.jsx'
 import { CartProvider } from './context/CartContext.jsx'
 import CheckoutPage from './pages/CheckoutPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import RegisterPage from './pages/RegisterPage.jsx';
+import CommandePage from './pages/CommandePage';
+import MesCommandesPage from './pages/MesCommandesPage';
+import SearchResults from './pages/SearchResults.jsx';
+import ProfilPage from './pages/ProfilPage.jsx';
 import './index.css'
 import 'leaflet/dist/leaflet.css';
 
@@ -22,6 +27,11 @@ createRoot(document.getElementById('root')).render(
             <Route path="/panier" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/connexion" element={<LoginPage />} />
+            <Route path="/inscription" element={<RegisterPage />} />
+            <Route path="/commande/:id" element={<CommandePage />} />
+            <Route path="/mes-commandes" element={<MesCommandesPage />} />
+            <Route path="/recherche" element={<SearchResults />} />
+            <Route path="/profil" element={<ProfilPage />} />
           </Routes>
         </CartProvider>
       </ErrorBoundary>

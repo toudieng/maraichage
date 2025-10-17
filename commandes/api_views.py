@@ -3,9 +3,22 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
-from .models import Produit, Panier, Details_panier
+from .models import Produit, Panier, Details_panier, Commande, Details_commande
+from django.utils.dateformat import format as date_format
 import json
 from produits.utils import get_prix_actuel
+from decimal import Decimal
+from django.db import transaction
+from django.db.models import F
+from django.urls import reverse
+from django.http import FileResponse
+from pathlib import Path
+import os
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from maraichage_ecommerce.paydunya_sdk.checkout import CheckoutInvoice, PaydunyaSetup
+
 
 #A garder, c'est sans logs
 # @csrf_exempt
@@ -152,6 +165,7 @@ def api_remove_panier_item(request):
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
+@csrf_exempt
 @login_required
 def api_clear_panier(request):
     try:
@@ -170,41 +184,44 @@ def api_valider_commande(request):
 
     try:
         data = json.loads(request.body)
-        telephone = data.get('telephone')
-        adresse = data.get('adresse')
-        mode_paiement = data.get('mode_paiement')
-
         utilisateur = request.user
+        telephone = data.get('telephone') or getattr(utilisateur, 'telephone', '')
+        adresse = data.get('adresse') or 'Adresse non précisée'
+        mode_paiement = data.get('mode_paiement') or 'paiement_livraison'
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+
         panier = Panier.objects.get(utilisateur=utilisateur)
         details_du_panier = Details_panier.objects.filter(panier=panier)
 
-        if not details_du_panier:
+        if not details_du_panier.exists():
             return JsonResponse({'error': 'Panier vide'}, status=400)
 
-        total = 0.0
+        total = Decimal('0.0')
         items_for_paydunya = []
 
         for item in details_du_panier:
-            prix = get_prix_actuel(item.produit)
+            prix = get_prix_actuel(item.produit) or Decimal('0.0')
             item.prix_unitaire_actuel = prix
             item.prix_total_item = prix * item.quantite
             total += item.prix_total_item
+
             items_for_paydunya.append({
                 "name": item.produit.nom,
                 "quantity": item.quantite,
                 "unit_price": float(prix),
-                "description": item.produit.description,
             })
 
         with transaction.atomic():
-            statut_initial = 'en_attente_livraison' if mode_paiement == 'paiement_livraison' else 'en_attente'
             commande = Commande.objects.create(
                 utilisateur=utilisateur,
                 total_prix=total,
-                statut=statut_initial,
+                statut='en_attente',
                 adresse_livraison=adresse,
                 telephone_livraison=telephone,
-                mode_paiement=mode_paiement,
+                latitude=latitude,
+                longitude=longitude,
+                mode_paiement=mode_paiement
             )
 
             for item in details_du_panier:
@@ -214,50 +231,116 @@ def api_valider_commande(request):
                     prix_unitaire=item.prix_unitaire_actuel,
                     quantite=item.quantite
                 )
-                item.produit.stock = F('stock') - item.quantite
-                item.produit.save(update_fields=['stock'])
 
-            # Appel PayDunya
+            # Vider le panier après validation
+            details_du_panier.delete()
+
+        return_url_final = f"http://localhost:5173/commande/{commande.id}"
+
+        try:
             invoice = CheckoutInvoice()
-            invoice.customer_name = utilisateur.get_full_name() or utilisateur.username
+
+            client_nom = f"{utilisateur.first_name} {utilisateur.last_name}".strip()
+            if not client_nom:
+                client_nom = utilisateur.username
+
+            invoice.customer_name = client_nom
             invoice.customer_email = utilisateur.email
-            invoice.customer_phone_number = utilisateur.telephone
+            invoice.customer_phone_number = telephone
+
             for item in items_for_paydunya:
-                invoice.add_item(**item)
+                invoice.add_item(
+                    name=item['name'],
+                    quantity=item['quantity'],
+                    unit_price=item['unit_price']
+                )
+
             invoice.total_amount = float(total)
             invoice.description = f"Commande #{commande.id} - Maraîchage Ecommerce"
-            invoice.return_url = request.build_absolute_uri(reverse('paiement_success')) + f"?commande_id={commande.id}"
+            invoice.return_url = return_url_final
             invoice.cancel_url = request.build_absolute_uri(reverse('voir_panier'))
 
             if invoice.create():
-                commande.transaction_id = invoice.url.split('/')[-1]
+                checkout_url = invoice.url
+                token = checkout_url.split('/')[-1]
+                commande.transaction_id = token
                 commande.save()
-                return JsonResponse({'success': True, 'checkout_url': invoice.url})
+
+                return JsonResponse({'success': True, 'checkout_url': checkout_url})
             else:
-                return JsonResponse({'success': False, 'error': invoice.response_text}, status=400)
+                return JsonResponse({
+                    'success': False,
+                    'error': invoice.response_text,
+                    'commande_id': commande.id
+                }, status=400)
+
+        except Exception as e:
+            print(f"Erreur PayDunya : {e}")
+            return JsonResponse({
+                'success': False,
+                'error': f"Erreur interne PayDunya : {str(e)}",
+                'commande_id': commande.id
+            }, status=500)
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
-def api_details_commande(request, commande_id):
-    try:
-        commande = get_object_or_404(Commande, id=commande_id, utilisateur=request.user)
-        details = Details_commande.objects.filter(commande=commande)
-        items = [{
-            'produit': d.produit.nom,
-            'quantite': d.quantite,
-            'prix_unitaire': d.prix_unitaire,
-            'prix_total': d.prix_unitaire * d.quantite
-        } for d in details]
-        return JsonResponse({
-            'commande_id': commande.id,
-            'statut': commande.statut,
-            'total': commande.total_prix,
-            'items': items
+def api_commande_detail(request, id):
+    commande = get_object_or_404(Commande, id=id, utilisateur=request.user)
+
+    produits = []
+    details = Details_commande.objects.filter(commande=commande)
+
+    for item in details:
+        produits.append({
+            "nom": item.produit.nom,
+            "quantite": item.quantite,
+            "prix_unitaire": float(item.prix_unitaire),
+            "prix_total": float(item.prix_unitaire * item.quantite),
         })
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+
+    client_nom = f"{commande.utilisateur.first_name} {commande.utilisateur.last_name}".strip()
+    if not client_nom:
+        client_nom = commande.utilisateur.username
+
+    commande_data = {
+        "id": commande.id,
+        "statut": commande.statut,
+        "total_prix": float(commande.total_prix),
+        "adresse_livraison": commande.adresse_livraison or "",
+        "telephone_livraison": commande.telephone_livraison or "",
+        "latitude": commande.latitude,
+        "longitude": commande.longitude,
+        "mode_paiement": commande.mode_paiement,
+        "date_commande": date_format(commande.date_commande, 'd/m/Y à H:i'),
+        "client": client_nom,
+        "produits": produits,
+    }
+
+    return JsonResponse({"commande": commande_data})
+
+# @login_required
+# def api_details_commande(request, commande_id):
+#     try:
+#         commande = get_object_or_404(Commande, id=commande_id, utilisateur=request.user)
+#         details = Details_commande.objects.filter(commande=commande)
+#         items = [{
+#             'produit': d.produit.nom,
+#             'quantite': d.quantite,
+#             'prix_unitaire': d.prix_unitaire,
+#             'prix_total': d.prix_unitaire * d.quantite
+#         } for d in details]
+#         return JsonResponse({
+#             'commande_id': commande.id,
+#             'statut': commande.statut,
+#             'total': commande.total_prix,
+#             'items': items
+#         })
+#     except Exception as e:
+#         return JsonResponse({'error': str(e)}, status=400)
 
 @login_required
 def api_historique_commandes(request):
@@ -301,3 +384,48 @@ def api_paydunya_webhook(request):
 
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+@login_required
+def api_facture_commande(request, id):
+    commande = get_object_or_404(Commande, id=id, utilisateur=request.user)
+
+    # 📁 Dossier Téléchargements
+    downloads_path = Path.home() / "Downloads"
+    filename = f"facture_commande_{commande.id}.pdf"
+    facture_path = downloads_path / filename
+
+    # 🧾 Génération du PDF
+    c = canvas.Canvas(str(facture_path), pagesize=A4)
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2 * cm, 28 * cm, f"Facture - Commande #{commande.id}")
+
+    c.setFont("Helvetica", 12)
+    c.drawString(2 * cm, 27.2 * cm, f"Client : {commande.utilisateur.get_full_name() or commande.utilisateur.username}")
+    c.drawString(2 * cm, 26.6 * cm, f"Téléphone : {commande.telephone_livraison or 'Non fourni'}")
+    c.drawString(2 * cm, 26.0 * cm, f"Adresse : {commande.adresse_livraison or 'Non précisée'}")
+    c.drawString(2 * cm, 25.4 * cm, f"Date : {commande.date_commande.strftime('%d/%m/%Y à %H:%M')}")
+    c.drawString(2 * cm, 24.8 * cm, f"Mode de paiement : {commande.mode_paiement}")
+    c.drawString(2 * cm, 24.2 * cm, f"Statut : {commande.statut}")
+
+    # 🛒 Détails des produits
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(2 * cm, 22.8 * cm, "Articles commandés :")
+
+    y = 22.2 * cm
+    c.setFont("Helvetica", 12)
+    for item in Details_commande.objects.filter(commande=commande):
+        line = f"- {item.produit.nom} x {item.quantite} @ {item.prix_unitaire:.2f} € = {item.prix_unitaire * item.quantite:.2f} €"
+        c.drawString(2 * cm, y, line)
+        y -= 0.6 * cm
+        if y < 2 * cm:
+            c.showPage()
+            y = 28 * cm
+
+    # 💰 Total
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(2 * cm, y - 1 * cm, f"Montant total : {commande.total_prix:.2f} €")
+
+    c.save()
+
+    # 📤 Envoi du fichier
+    return FileResponse(open(facture_path, 'rb'), content_type='application/pdf')

@@ -18,19 +18,4 @@ urlpatterns = [
 
     path('livreur/dashboard/', views.tableau_de_bord_livreur, name='tableau_de_bord_livreur'),
     path('livreur/valider/<int:commande_id>/', views.valider_livraison, name='valider_livraison'),
-
-    # Panier
-    path('api/panier/add/', api_views.api_ajouter_au_panier),
-    path('api/panier/', api_views.api_voir_panier),
-    path('api/panier/update/', api_views.api_update_panier_item),
-    path('api/panier/remove/', api_views.api_remove_panier_item),
-    path('api/panier/clear/', api_views.api_clear_panier),
-
-    # Commande
-    path('api/commande/valider/', api_views.api_valider_commande),
-    path('api/commande/details/<int:commande_id>/', api_views.api_details_commande),
-    path('api/commande/historique/', api_views.api_historique_commandes),
-
-    # Paiement
-    path('api/commande/webhook/', api_views.api_paydunya_webhook),
 ]

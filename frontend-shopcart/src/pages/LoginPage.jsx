@@ -1,7 +1,8 @@
 // src/pages/LoginPage.jsx
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
+import { Link, useNavigate } from 'react-router-dom';
+
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -64,6 +65,12 @@ const LoginPage = () => {
           Se connecter
         </button>
       </form>
+      <p className="text-center text-sm mt-4">
+        Pas encore de compte ?{' '}
+        <Link to="/inscription" className="text-green-600 hover:underline">
+          Créez-en un ici
+        </Link>
+      </p>
     </div>
   );
 };

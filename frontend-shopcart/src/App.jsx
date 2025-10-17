@@ -5,6 +5,8 @@ import axios from 'axios';
 import ProductCard from './components/ProductCard';
 import { useCart } from './context/CartContext';
 import { ToastContainer, useToast } from './components/Toast';
+import { useNavigate } from 'react-router-dom';
+import Navbar from './components/Navbar';
 
 // L'URL de votre API Django
 const API_URL = 'http://localhost:8000/produits/api/produits/'; 
@@ -16,6 +18,28 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const { getTotalItems } = useCart();
   const { toasts } = useToast();
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/logout/', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (res.ok) {
+        alert('Déconnexion réussie');
+        navigate('/connexion');
+      } else {
+        alert('Erreur lors de la déconnexion');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erreur serveur');
+    }
+  };
+
 
   useEffect(() => {
     axios.get(API_URL)
@@ -67,35 +91,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-gray-50">
       
-      {/* NAVBAR */}
-      <header className="bg-white shadow-md sticky top-0 z-50 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
-                <span className="text-white font-bold text-2xl">🌱</span>
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Natal Mbey</h1>
-                <p className="text-sm text-gray-500">Produits maraîchers frais du Sénégal</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <a href="/panier" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                {getTotalItems() > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
-                    {getTotalItems()}
-                  </span>
-                )}
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
