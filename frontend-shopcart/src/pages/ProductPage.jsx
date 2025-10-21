@@ -2,11 +2,11 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
 import axios from 'axios';
-import ProductCard from './components/ProductCard';
-import { useCart } from './context/CartContext';
-import { ToastContainer, useToast } from './components/Toast';
+import ProductCard from '../components/ProductCard';
+import { useCart } from '../context/CartContext';
+import { ToastContainer, useToast } from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
-import Navbar from './components/Navbar';
+import Navbar from '../components/Navbar';
 
 // L'URL de votre API Django
 const API_URL = 'http://localhost:8000/produits/api/produits/'; 
