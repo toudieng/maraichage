@@ -1,4 +1,4 @@
-// src/App.jsx
+// pages/ProductPages.jsx
 import { useState, useEffect } from 'react';
 import React from 'react';
 import axios from 'axios';
@@ -7,6 +7,8 @@ import { useCart } from '../context/CartContext';
 import { ToastContainer, useToast } from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import im2 from '../assets/im2.jpg'; 
 
 // L'URL de votre API Django
 const API_URL = 'http://localhost:8000/produits/api/produits/'; 
@@ -20,6 +22,8 @@ function App() {
   const { toasts } = useToast();
 
   const navigate = useNavigate();
+
+  const heroImage = im2; 
 
   const handleLogout = async () => {
     try {
@@ -93,93 +97,71 @@ function App() {
       
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* SECTION HÉROS */}
-        <div className="relative bg-gradient-to-r from-green-600 to-green-500 text-white p-12 md:p-20 rounded-2xl mb-12 shadow-2xl overflow-hidden">
-          <div className="max-w-4xl z-10 relative">
-            <h2 className="text-4xl md:text-5xl font-extrabold mb-4">
-              Maraîchage et Épicerie Fine
-            </h2>
-            <p className="text-xl mb-6 font-light">
-              Retrouvez le meilleur du terroir local et des produits frais, livrés avec soin.
-            </p>
-            <button className="inline-block px-8 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg shadow-lg hover:bg-yellow-300 transition-colors">
-              Découvrir Maintenant
-            </button>
-          </div>
-          {/* Motif décoratif */}
-          <div className="absolute right-0 top-0 h-full w-1/2 opacity-10">
-            <div className="text-9xl">🥕🌿🌶️</div>
-          </div>
-        </div>
+      {/* SECTION HERO - Prend TOUTE la largeur de l'écran 
+        Les paddings horizontaux sont gérés à l'intérieur pour le centrage du TEXTE 
+      */}
+      <div 
+        className="relative bg-cover bg-center h-[500px] mt-5 text-white py-20 md:p-20 mb-12 shadow-2xl overflow-hidden flex items-center justify-center w-full"
+        style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${heroImage})` }}
+      >
+        <div className="max-w-4xl z-10 relative text-center px-4 sm:px-6 lg:px-8"> {/* Ajout de paddings ici pour que le texte ne touche pas les bords sur mobile */}
+          <h2 className="text-4xl md:text-5xl font-extrabold mb-4 drop-shadow-lg">
+            Maraîchage et Épicerie Fine
+          </h2>
 
-        {/* CATÉGORIES */}
-        <section className="mb-12">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6">Nos Catégories</h3>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <CategoryCard emoji="🥕" name="Légumes Racines" />
-            <CategoryCard emoji="🌿" name="Feuillages" />
-            <CategoryCard emoji="🌶️" name="Piments & Épices" />
-            <CategoryCard emoji="🍋" name="Fruits Exotiques" />
-            <CategoryCard emoji="🌾" name="Céréales" />
-            <CategoryCard emoji="🥛" name="Produits Laitiers" />
-          </div>
-        </section>
+          <div className="h-10"></div>
 
-        {/* BARRE DE RECHERCHE */}
-        <div className="bg-white rounded-2xl shadow-md p-6 mb-8 border border-gray-100">
-          <div className="relative">
-            <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Rechercher un produit (tomate, oignon, piment...)"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors text-gray-700"
-            />
-          </div>
+          <p className="text-xl md:text-2xl mb-8 font-light drop-shadow-md">
+            "Contribuer au développement de l'économie sénégalaise en qualité et en quantité."
+          </p>
+
+          <div className="h-10"></div>
+
+          <p className="text-xl mb-6 font-light">
+            Retrouvez le meilleur du terroir local et des produits frais, livrés avec soin.
+          </p>
+
         </div>
+      </div>
+      
+      {/* CONTENU PRINCIPAL - Prend une largeur limitée et est centré 
+        (C'est ici que vos produits seront limités et auront des paddings) 
+      */}
+      <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8"> 
+
+        <div className="h-10"></div>
 
         {/* SECTION PRODUITS */}
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-            Nos Produits Frais
-            <span className="text-green-600">({filteredProducts.length})</span>
-          </h2>
-          <p className="text-gray-600 mt-2">Cultivés localement à Ross Béthio, Dagana</p>
+        <div className="mb-6 text-center">
+            <h2 className="text-3xl font-bold text-gray-800 flex justify-center gap-2">
+                Nos Produits Frais
+            </h2>
+            <p className="text-gray-600 mt-2">Cultivés localement à Ross Béthio, Dagana</p>
         </div>
 
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl shadow-md">
-            <div className="text-6xl mb-4">🔍</div>
-            <p className="text-gray-500 text-xl font-semibold">Aucun produit trouvé</p>
-            <p className="text-gray-400 mt-2">Essayez de modifier votre recherche</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filteredProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
+        <div className="h-10"></div>
+          
+          <div className="flex justify-center mx-auto">
+            {filteredProducts.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-2xl shadow-md mx-4 sm:mx-0">
+              <div className="text-6xl mb-4">🔍</div>
+              <p className="text-gray-500 text-xl font-semibold">Aucun produit trouvé</p>
+              <p className="text-gray-400 mt-2">Essayez de modifier votre recherche</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 justify-items-center">
+              {filteredProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </div>
+        
       </main>
 
-      {/* FOOTER */}
-      <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-white mt-20 py-12 border-t-4 border-green-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold mb-3">🌱 Natal Mbey - Maraîchage Moderne</h3>
-            <p className="text-gray-300 text-lg">Ross Béthio, Dagana - Sénégal</p>
-            <p className="text-green-400 font-semibold mt-2 text-lg">📞 Tel: 78 587 41 10</p>
-            <div className="mt-6 pt-6 border-t border-gray-700">
-              <p className="text-gray-400 text-sm">© 2024 Projet Natal Mbey - Tous droits réservés</p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <div className="h-5"></div>
+
+      <Footer />
     </div>
   );
 }

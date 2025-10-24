@@ -34,7 +34,7 @@ const CartPage = () => {
                 <div>
                   <p className="font-semibold">{item.produit}</p>
                   <p className="text-sm text-gray-500">
-                    {item.prix_unitaire} € x {item.quantite}
+                    {item.prix_unitaire} F CFA x {item.quantite}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -63,7 +63,7 @@ const CartPage = () => {
           </ul>
 
           <div className="mt-6 flex justify-between items-center">
-            <p className="text-xl font-bold">Total : {total.toFixed(2)} €</p>
+            <p className="text-xl font-bold">Total : {total.toFixed(2)} F CFA</p>
             <button
               onClick={handleClearCart}
               className={`px-4 py-2 rounded transition ${

@@ -1,40 +1,44 @@
-// src/components/ProductCard.jsx
+// src/components/ProductCard.jsx (CODE CORRIGÉ)
 import { useState } from 'react';
 import { useCart } from '../context/CartContext';
-import { useToast } from './Toast';
+import { useToast } from './Toast'; // Supposons que 'showToast' est exposé par 'useToast'
+import { useNavigate } from 'react-router-dom';
 
-
-const ProductCard = ({ product, onAddToCart }) => {
+const ProductCard = ({ product }) => {
     const [isFavorite, setIsFavorite] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
-    const { addToCart } = useCart();
+    // 💡 Utilisez la fonction addToCart fournie par votre contexte
+    const { addToCart } = useCart(); 
     const { showToast } = useToast();
     
     const name = product.nom || "Produit Maraîcher";
     const price = product.prix_actuel || 0.00; 
     const image = product.image_url || 'https://placehold.co/400x300/22c55e/ffffff?text=Image';
+    const navigate = useNavigate();
     
+    // 🔥 FONCTION CORRIGÉE : Appelle addToCart du contexte
     const handleAddToCart = async () => {
+        setIsAdding(true);
         try {
-            const response = await fetch('http://localhost:8000/api/panier/add/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({ produit_id: product.id, quantite: 1 }),
-            });
-            const data = await response.json();
-            if (data.success) {
-            showToast('Produit ajouté au panier !');
+            // L'appel à cette fonction se connecte à l'API ET met à jour l'état React via fetchCart()
+            const result = await addToCart(product, 1); 
+            
+            if (result.success) {
+                showToast(result.message);
+            } else {
+                 showToast(result.message, 'error');
             }
         } catch (error) {
             console.error('Erreur panier:', error);
+            showToast('Erreur lors de l\'ajout au panier.', 'error');
+        } finally {
+            setIsAdding(false);
         }
     };
+    // ... Reste du code du composant ...
 
-    
     const renderStars = (rating) => {
+        // ... (Votre fonction reste inchangée) ...
         const fullStars = Math.floor(rating || 5); 
         const stars = [];
         for (let i = 0; i < 5; i++) {
@@ -47,10 +51,17 @@ const ProductCard = ({ product, onAddToCart }) => {
         return stars;
     };
 
+    const handleCardClick = () => {
+    navigate(`/produits/${product.id}`); 
+    };    
+
+
     return (
-        <div className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full">
+        <div className="group bg-white !pb-2 rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full w-full min-w-[250px]"
+            onClick={handleCardClick}
+        >
             
-            {/* Image Container */}
+            {/* Image Container et Bouton Favoris inchangés */}
             <div className="relative bg-gray-50 overflow-hidden h-56">
                 <img 
                     src={image}
@@ -58,7 +69,6 @@ const ProductCard = ({ product, onAddToCart }) => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 
-                {/* Bouton Favoris */}
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();
@@ -77,7 +87,7 @@ const ProductCard = ({ product, onAddToCart }) => {
             </div>
 
             {/* Content */}
-            <div className="p-5 flex flex-col flex-grow">
+            <div className="px-5 py-4 flex flex-col flex-grow">
                 
                 {/* Titre */}
                 <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">
@@ -93,16 +103,22 @@ const ProductCard = ({ product, onAddToCart }) => {
                 </div>
                 
                 {/* Prix */}
-                <div className="mt-auto">
-                    <p className="text-3xl font-bold text-green-600 mb-4">
-                        {parseFloat(price).toFixed(2)} €
+                <div className="mt-auto mb-4">
+                    <p className="text-2xl font-bold text-black-600 mb-4">
+                        {parseFloat(price).toFixed(2)} F CFA
                     </p>
                     
                     {/* Bouton Ajouter au Panier */}
                     <button 
-                        onClick={handleAddToCart}
+                        onClick={(e) => {
+                            // 🔥 ÉTAPE CRUCIALE : Empêche le clic de remonter jusqu'à la carte parente
+                            e.stopPropagation(); 
+                            handleAddToCart();
+                        }}
                         disabled={isAdding}
-                        className="w-full py-3 text-base font-semibold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:w-auto !px-2 !py-2 !ml-1 text-base font-semibold bg-white text-black border border-black rounded-lg 
+                                hover:bg-green-500 hover:text-white hover:border-green-500 
+                                transition-all duration-200 shadow-md transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isAdding ? 'Ajout...' : 'Ajouter au Panier'}
                     </button>

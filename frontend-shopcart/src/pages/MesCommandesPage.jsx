@@ -67,7 +67,7 @@ const MesCommandesPage = () => {
               <p><strong>Commande #{c.id}</strong></p>
               <p>Date : {new Date(c.date).toLocaleString()}</p>
               <p>Statut : {c.statut}</p>
-              <p>Total : {Number(c.total).toFixed(2)} €</p>
+              <p>Total : {Number(c.total).toFixed(2)} F CFA</p>
               <Link
                 to={`/commande/${c.id}`}
                 className="inline-block mt-2 text-blue-600 hover:underline"

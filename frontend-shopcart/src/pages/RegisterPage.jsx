@@ -35,7 +35,7 @@ const RegisterPage = () => {
       const data = await response.json();
       if (data.success) {
         showToast('Inscription réussie !');
-        navigate('/panier');
+        navigate('/');
       } else {
         showToast(data.error || 'Erreur lors de l’inscription', 'error');
       }

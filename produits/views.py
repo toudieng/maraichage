@@ -32,3 +32,7 @@ class ProduitListAPIView(generics.ListAPIView):
     # Ceci récupère tous les objets Produit de la base de données
     queryset = Produit.objects.all() 
     serializer_class = ProduitSerializer
+
+class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Produit.objects.all()
+    serializer_class = ProduitSerializer

@@ -14,6 +14,8 @@ import SearchResults from './pages/SearchResults.jsx';
 import ProfilPage from './pages/ProfilPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import ProductPage from './pages/ProductPage.jsx';
+import ProductDetail from './pages/ProductDetail';
+import Panier from './pages/Panier';
 import './index.css'
 import 'leaflet/dist/leaflet.css';
 
@@ -26,7 +28,7 @@ createRoot(document.getElementById('root')).render(
         <CartProvider>
           <Routes>
             {/* <Route path="/" element={<App />} /> */}
-            <Route path="/panier" element={<CartPage />} />
+            <Route path="/panier" element={<Panier />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/connexion" element={<LoginPage />} />
             <Route path="/inscription" element={<RegisterPage />} />
@@ -36,6 +38,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/profil" element={<ProfilPage />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/produits" element={<ProductPage />} />
+            <Route path="/produits/:productId" element={<ProductDetail />} />
           </Routes>
         </CartProvider>
       </ErrorBoundary>

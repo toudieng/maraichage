@@ -117,15 +117,31 @@ def api_voir_panier(request):
 
         data = []
         for item in items:
-            prix = get_prix_actuel(item.produit)
-            print(f"🧾 Item {item.id} | Produit : {item.produit.nom} | Quantité : {item.quantite} | Prix unitaire : {prix}")
+            prix_actuel = get_prix_actuel(item.produit)
+            
+            image_url = ''
+            if item.produit.image and hasattr(item.produit.image, 'url'):
+                # Construction de l'URL absolue pour l'image
+                image_url = request.build_absolute_uri(item.produit.image.url)
 
+            print(f"🧾 Item {item.id} | Produit : {item.produit.nom} | Quantité : {item.quantite} | Prix unitaire : {prix_actuel}")
+
+            # 🌟 CORRECTION CLÉ : Créer un objet 'produit' complet
             data.append({
                 'id': item.id,
-                'produit': item.produit.nom,
+                # L'objet 'produit' imbriqué contient le nom, le prix ACTUEL et l'URL de l'image
+                'produit': { 
+                    'id': item.produit.id,
+                    'nom': item.produit.nom,
+                    'prix_actuel': prix_actuel, # Le front-end le cherchera ici
+                    'image_url': image_url,     # Le front-end le cherchera ici
+                },
+                
+                # Ces champs sont maintenus pour la compatibilité avec votre code existant
                 'quantite': item.quantite,
-                'prix_unitaire': prix,
-                'prix_total': prix * item.quantite,
+                'prix_unitaire': prix_actuel, # Reste pour la compatibilité
+                'prix_total': prix_actuel * item.quantite, # Reste pour la compatibilité
+                # 'image_url': image_url, # Supprimé car maintenant dans l'objet 'produit' (plus propre)
             })
 
         return JsonResponse({'panier': data})
@@ -133,11 +149,10 @@ def api_voir_panier(request):
         print("⚠️ Aucun panier trouvé pour l’utilisateur :", request.user.username)
         return JsonResponse({'panier': []})
 
-
 @csrf_exempt
 @login_required
 def api_update_panier_item(request):
-    if request.method == 'POST':
+    if request.method in ['POST', 'PUT', 'PATCH']:
         try:
             data = json.loads(request.body)
             item_id = data.get('item_id')
@@ -414,7 +429,7 @@ def api_facture_commande(request, id):
     y = 22.2 * cm
     c.setFont("Helvetica", 12)
     for item in Details_commande.objects.filter(commande=commande):
-        line = f"- {item.produit.nom} x {item.quantite} @ {item.prix_unitaire:.2f} € = {item.prix_unitaire * item.quantite:.2f} €"
+        line = f"- {item.produit.nom} x {item.quantite} @ {item.prix_unitaire:.2f} F CFA = {item.prix_unitaire * item.quantite:.2f} F CFA"
         c.drawString(2 * cm, y, line)
         y -= 0.6 * cm
         if y < 2 * cm:
@@ -423,7 +438,7 @@ def api_facture_commande(request, id):
 
     # 💰 Total
     c.setFont("Helvetica-Bold", 14)
-    c.drawString(2 * cm, y - 1 * cm, f"Montant total : {commande.total_prix:.2f} €")
+    c.drawString(2 * cm, y - 1 * cm, f"Montant total : {commande.total_prix:.2f} F CFA")
 
     c.save()
 

@@ -127,12 +127,12 @@ const CheckoutPage = () => {
             {cartItems.map(item => (
               <li key={item.id} className="flex justify-between py-2 border-b">
                 <span>{item.produit} x {item.quantite}</span>
-                <span>{Number(item.prix_total || 0).toFixed(2)} €</span>
+                <span>{Number(item.prix_total || 0).toFixed(2)} F CFA</span>
               </li>
             ))}
           </ul>
 
-          <p className="text-xl font-bold mb-4">Total : {total.toFixed(2)} €</p>
+          <p className="text-xl font-bold mb-4">Total : {total.toFixed(2)} F CFA</p>
 
           <div className="space-y-4">
             <input

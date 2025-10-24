@@ -47,12 +47,12 @@ const CommandePage = () => {
         {commande.produits.map((item, index) => (
           <li key={index} className="flex justify-between py-2 border-b">
             <span>{item.nom} x {item.quantite}</span>
-            <span>{Number(item.prix_total).toFixed(2)} €</span>
+            <span>{Number(item.prix_total).toFixed(2)} F CFA</span>
           </li>
         ))}
       </ul>
 
-      <p className="text-xl font-bold mb-4">Total : {Number(commande.total_prix).toFixed(2)} €</p>
+      <p className="text-xl font-bold mb-4">Total : {Number(commande.total_prix).toFixed(2)} F CFA</p>
 
       <div className="h-64 rounded-lg overflow-hidden border">
         <MapContainer center={position} zoom={13} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
