@@ -20,32 +20,6 @@ from reportlab.lib.units import cm
 from maraichage_ecommerce.paydunya_sdk.checkout import CheckoutInvoice, PaydunyaSetup
 
 
-#A garder, c'est sans logs
-# @csrf_exempt
-# @login_required
-# def api_ajouter_au_panier(request):
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             produit_id = data.get('produit_id')
-#             quantite = int(data.get('quantite', 1))
-
-#             produit = get_object_or_404(Produit, id=produit_id)
-#             panier, _ = Panier.objects.get_or_create(utilisateur=request.user)
-#             item, created = Details_panier.objects.get_or_create(
-#                 panier=panier, produit=produit,
-#                 defaults={'quantite': quantite}
-#             )
-#             if not created:
-#                 item.quantite += quantite
-#                 item.save()
-
-#             return JsonResponse({'success': True, 'message': 'Produit ajouté au panier'})
-#         except Exception as e:
-#             return JsonResponse({'success': False, 'error': str(e)}, status=400)
-#     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
-
-
 @csrf_exempt
 @login_required
 def api_ajouter_au_panier(request):
@@ -83,25 +57,6 @@ def api_ajouter_au_panier(request):
     print("🚫 Méthode non autorisée :", request.method)
     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
-
-# @login_required
-# def api_voir_panier(request):
-#     try:
-#         panier = Panier.objects.get(utilisateur=request.user)
-#         items = Details_panier.objects.filter(panier=panier)
-#         data = []
-#         for item in items:
-#             prix = get_prix_actuel(item.produit)
-#             data.append({
-#                 'id': item.id,
-#                 'produit': item.produit.nom,
-#                 'quantite': item.quantite,
-#                 'prix_unitaire': prix,
-#                 'prix_total': prix * item.quantite,
-#             })
-#         return JsonResponse({'panier': data})
-#     except Panier.DoesNotExist:
-#         return JsonResponse({'panier': []})
 
 
 @login_required
@@ -250,6 +205,10 @@ def api_valider_commande(request):
             # Vider le panier après validation
             details_du_panier.delete()
 
+        webhook_url_final = request.build_absolute_uri(
+        reverse('paydunya_webhook')
+        )
+
         return_url_final = f"http://localhost:5173/commande/{commande.id}"
 
         try:
@@ -336,26 +295,6 @@ def api_commande_detail(request, id):
     }
 
     return JsonResponse({"commande": commande_data})
-
-# @login_required
-# def api_details_commande(request, commande_id):
-#     try:
-#         commande = get_object_or_404(Commande, id=commande_id, utilisateur=request.user)
-#         details = Details_commande.objects.filter(commande=commande)
-#         items = [{
-#             'produit': d.produit.nom,
-#             'quantite': d.quantite,
-#             'prix_unitaire': d.prix_unitaire,
-#             'prix_total': d.prix_unitaire * d.quantite
-#         } for d in details]
-#         return JsonResponse({
-#             'commande_id': commande.id,
-#             'statut': commande.statut,
-#             'total': commande.total_prix,
-#             'items': items
-#         })
-#     except Exception as e:
-#         return JsonResponse({'error': str(e)}, status=400)
 
 @login_required
 def api_historique_commandes(request):

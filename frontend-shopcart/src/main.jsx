@@ -16,6 +16,7 @@ import HomePage from './pages/HomePage.jsx';
 import ProductPage from './pages/ProductPage.jsx';
 import ProductDetail from './pages/ProductDetail';
 import Panier from './pages/Panier';
+import ContactPage from './pages/ContactPage';
 import './index.css'
 import 'leaflet/dist/leaflet.css';
 
@@ -36,6 +37,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/mes-commandes" element={<MesCommandesPage />} />
             <Route path="/recherche" element={<SearchResults />} />
             <Route path="/profil" element={<ProfilPage />} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/produits" element={<ProductPage />} />
             <Route path="/produits/:productId" element={<ProductDetail />} />

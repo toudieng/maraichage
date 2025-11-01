@@ -12,6 +12,7 @@ from .forms import ValidationCommandeForm
 from .forms import StatutCommandeForm 
 from django.contrib import messages
 from utilisateurs.views import is_livreur
+from django.views.decorators.csrf import csrf_exempt
 from maraichage_ecommerce.paydunya_sdk.checkout import CheckoutInvoice, PaydunyaSetup 
 
 @login_required
@@ -253,7 +254,7 @@ def confirmation_commande(request, commande_id):
     }
     return render(request, 'confirmation_commande.html', context)
 
-
+@csrf_exempt
 def paydunya_webhook(request):
     # On ne traite que les requêtes POST (envoyées par PayDunya)
     if request.method != 'POST':
@@ -286,7 +287,7 @@ def paydunya_webhook(request):
             if paydunya_status == 'completed' and commande.statut == 'en_attente':
                 
                 # Le paiement est confirmé, on met à jour le statut
-                commande.statut = 'payee' # Utilisez 'payee' ou 'validée'
+                commande.statut = 'validée' # Utilisez 'payee' ou 'validée'
                 commande.save()
                 
                 # Optionnel : Envoyer un email de confirmation ici
@@ -522,24 +523,6 @@ def validation_commande(request):
 # Fonction utilitaire pour vérifier si l'utilisateur est un staff (administrateur)
 def is_staff_user(user):
     return user.is_staff
-
-# @login_required
-# @user_passes_test(is_staff_user) # 🚨 Sécurité : seul le personnel (staff) peut y accéder
-# def tableau_bord_commandes(request):
-#     """
-#     Affiche la liste de toutes les commandes pour l'administration.
-#     """
-#     # Récupère toutes les commandes, triées par date (récentes en premier)
-#     commandes = Commande.objects.all().order_by('-date_commande')
-
-#     # Filtrage rapide pour les commandes en attente (par exemple)
-#     commandes_en_attente = Commande.objects.filter(statut='en_attente').order_by('-date_commande')
-
-#     context = {
-#         'commandes': commandes,
-#         'commandes_en_attente': commandes_en_attente,
-#     }
-#     return render(request, 'tableau_bord_commandes.html', context)
 
 
 @login_required

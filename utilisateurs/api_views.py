@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib.auth import get_user_model
+from django.views.decorators.http import require_POST
+import json
 
 User = get_user_model()
 
@@ -68,3 +70,28 @@ def api_user_info(request):
         'nom_complet': user.get_full_name(),
     })
 
+@require_POST
+@login_required
+def api_profil_update(request):
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Données JSON invalides.'}, status=400)
+
+    user = request.user
+    
+    if 'nom_complet' in data:
+        user.first_name = data.get('nom_complet', '').split(' ')[0] if data.get('nom_complet') else user.first_name
+        user.last_name = ' '.join(data.get('nom_complet', '').split(' ')[1:]) if len(data.get('nom_complet', '').split(' ')) > 1 else user.last_name
+    
+    if 'email' in data:
+        user.email = data['email']
+        
+    if hasattr(user, 'telephone') and 'telephone' in data:
+        setattr(user, 'telephone', data['telephone'])
+
+    try:
+        user.save()
+        return JsonResponse({'message': 'Profil mis à jour avec succès.'}, status=200)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)

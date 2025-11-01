@@ -55,7 +55,7 @@ const Panier = () => {
         updateQuantity, 
         removeFromCart, 
         clearCart,
-        user // Pour pré-remplir le téléphone
+        user,
     } = useCart();
     
     const navigate = useNavigate();
@@ -83,15 +83,31 @@ const Panier = () => {
     // ----------------------------------------------------------------------
 
     // Simule la recherche d'adresse à partir des coordonnées (peut être remplacé par une API)
-    const fetchAddressFromCoords = (lat, lng) => {
-        // Logique de géocodage inversé simplifiée (à adapter à une vraie API)
-        const addressPlaceholder = `Coordonnées: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        setForm(prev => ({
-            ...prev,
-            adresse: addressPlaceholder,
-            latitude: lat,
-            longitude: lng,
-        }));
+    const fetchAddressFromCoords = async (lat, lng) => { // ⬅️ Ajout de 'async'
+        try {
+            // Appel à l'API Nominatim (OpenStreetMap) pour le géocodage inverse
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await res.json();
+            
+            // Mettre à jour le formulaire avec le nom d'affichage complet s'il existe
+            const newAddress = data?.display_name || `Coordonnées: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+            setForm(prev => ({
+                ...prev,
+                adresse: newAddress, // ✅ Adresse lisible
+                latitude: lat,
+                longitude: lng,
+            }));
+        } catch (err) {
+            console.error("Erreur géocodage inverse :", err);
+            // En cas d'erreur, mettre au moins les coordonnées
+            setForm(prev => ({
+                ...prev,
+                adresse: `Coordonnées: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+                latitude: lat,
+                longitude: lng,
+            }));
+        }
     };
 
     // Composant pour le marqueur déplaçable
@@ -141,6 +157,26 @@ const Panier = () => {
         }));
     }, [position]);
 
+
+    useEffect(() => {
+        // Le endpoint pour récupérer les infos utilisateur
+        axios.get('http://localhost:8000/api/user/', {
+            withCredentials: true,
+        })
+        .then(res => {
+            // Remplir le champ téléphone avec la donnée de l'API
+            setForm(prev => ({ 
+                ...prev, 
+                telephone: res.data.telephone || '',
+                // Vous pouvez aussi charger l'adresse si elle est disponible dans res.data.adresse
+                adresse: res.data.adresse || prev.adresse,
+            }));
+        })
+        .catch(err => {
+            console.error('Erreur lors du chargement des infos utilisateur :', err);
+        });
+    }, []);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm(prev => ({ ...prev, [name]: value }));
@@ -185,50 +221,41 @@ const Panier = () => {
 
     // Soumission de la commande
     const handleSubmit = async () => {
-        setError('');
-        
-        if (cartItems.length === 0) {
-            setError('Votre panier est vide.');
-            return;
-        }
+    setLoading(true);
+    setError('');
 
-        if (!form.adresse || !form.telephone) {
-            setError('Veuillez remplir l\'adresse et le téléphone.');
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            // Données à envoyer au backend (Django/API)
-            const orderData = {
-                ...form,
-                // Le backend doit récupérer les produits via la session/l'utilisateur
-                total_commande: getTotal(),
-            };
-
-            // ⚠️ Assurez-vous que l'URL d'API est correcte (ex: /api/commander/)
-            const response = await axios.post('/api/commander/', orderData, {
-                withCredentials: true,
-                headers: {
-                    'X-CSRFToken': localStorage.getItem('csrftoken'),
-                },
-            });
-
-            if (response.data.success) {
-                // Vider le panier après une commande réussie
-                clearCart(false); // Vider localement sans forcément notifier le BE si la commande l'a fait
-                navigate('/confirmation-commande', { state: { orderId: response.data.order_id } });
-            } else {
-                setError(response.data.message || 'Échec de la commande.');
-            }
-        } catch (err) {
-            console.error("Erreur lors de la soumission de la commande:", err);
-            setError('Une erreur est survenue lors de la commande. Veuillez réessayer.');
-        } finally {
-            setLoading(false);
-        }
+    const payload = {
+      telephone: form.telephone,
+      adresse: form.adresse,
+      mode_paiement: form.mode_paiement,
+      latitude: form.latitude,
+      longitude: form.longitude,
     };
+
+    try {
+      const res = await axios.post('http://localhost:8000/api/commande/valider/', payload, {
+        withCredentials: true,
+      });
+
+      if (res.data.success) {
+        if (res.data.checkout_url) {
+          window.location.href = res.data.checkout_url;
+        } else if (res.data.commande_id) {
+          clearCart();
+          navigate(`/commande/${res.data.commande_id}`);
+        } else {
+          setError("Commande validée mais aucune redirection fournie.");
+        }
+      } else {
+        setError(res.data.error || 'Erreur inconnue');
+      }
+    } catch (err) {
+      console.error('Erreur lors de la validation :', err);
+      setError('Erreur lors de la validation de la commande');
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
     // ----------------------------------------------------------------------
@@ -239,10 +266,10 @@ const Panier = () => {
         <div className="min-h-screen bg-gray-50">
             <Navbar /> 
             
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                <div className="bg-white p-6 md:p-10 shadow-lg rounded-xl">
+            <main className="max-w-7xl !mx-auto !px-4 sm:px-6 lg:px-8 !py-10">
+                <div className="bg-white p-6 md:p-10 shadow-lg rounded-none">
 
-                    <h2 className="text-3xl font-extrabold text-gray-900 mb-8 border-b pb-4">
+                    <h2 className="text-3xl font-extrabold text-gray-900 !mb-8 border-b !pb-4">
                         Finaliser ma commande 🛒
                     </h2>
 
@@ -252,8 +279,8 @@ const Panier = () => {
                         <div className="flex flex-col lg:flex-row gap-8">
                             
                             {/* ⬅️ COLONNE 1 : ARTICLES DU PANIER (W-3/5) */}
-                            <div className="lg:w-3/5 divide-y divide-gray-100">
-                                <h3 className="text-xl font-bold text-gray-900 mb-4 pb-2">1. Articles dans votre Panier</h3>
+                            <div className="lg:w-3/5 divide-y overflow-hidden divide-gray-100 !mb-10 !p-6 shadow-lg border border-gray-200">
+                                <h3 className="text-xl font-extrabold text-gray-900 !mb-4 !pb-2">1. Articles dans votre Panier</h3>
                                 
                                 {cartItems.map((item) => {
 
@@ -278,9 +305,9 @@ const Panier = () => {
                                             className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center"
                                         >
                                             {/* Image et Infos produit */}
-                                            <div className="flex items-center flex-1 min-w-0 mb-4 sm:mb-0">
+                                            <div className="flex items-center flex-1 min-w-0 !mb-4 sm:mb-0">
                                                 {/* Image du produit (utilise imageUrl) */}
-                                                <div className="w-16 h-16 bg-gray-100 rounded-lg mr-4 flex-shrink-0 overflow-hidden">
+                                                <div className="w-16 h-16 bg-gray-100 rounded-none !mr-4 flex-shrink-0 overflow-hidden">
                                                     {imageUrl ? (
                                                         <img 
                                                             src={imageUrl} 
@@ -303,7 +330,7 @@ const Panier = () => {
                                             </div>
                                             
                                             {/* Contrôles quantité et Prix (À DROITE) */}
-                                            <div className="flex items-center space-x-4">
+                                            <div className="flex items-center !space-x-4">
                                                 {/* Groupe de Quantité */}
                                                 <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden shadow-sm">
                                                     <button
@@ -349,14 +376,14 @@ const Panier = () => {
                             </div>
 
                             {/* ➡️ COLONNE 2 : RÉCAPITULATIF & CHECKOUT */}
-                            <div className="lg:w-2/5 flex flex-col gap-6">
+                            <div className="lg:w-2/5 !mb-10 flex flex-col gap-6">
 
                                 {/* BLOC 2.1: RÉSUMÉ DE LA COMMANDE */}
-                                <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-200 sticky top-4">
-                                    <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b pb-2">2. Résumé de la commande</h3>
+                                <div className="!p-6 bg-white rounded-none shadow-lg border border-gray-200">
+                                    <h3 className="text-xl font-extrabold text-gray-900 !mb-4 border-b border-gray-200 !pb-2">2. Résumé de la commande</h3>
 
                                     {/* Détails des coûts */}
-                                    <div className="space-y-3 text-gray-700">
+                                    <div className="!space-y-3 text-gray-700">
                                         <div className="flex justify-between">
                                             <span>Sous-total Panier ({cartItems.length} articles) :</span>
                                             {/* 🌟 getTotal est utilisé ici */}
@@ -364,14 +391,14 @@ const Panier = () => {
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Livraison Estimée :</span>
-                                            <span className="text-green-600 font-semibold">GRATUIT</span>
+                                            <span className="text-gray-900 !mb-6 font-semibold">GRATUIT</span>
                                         </div>
                                     </div>
                                     
                                     {/* Total Final */}
-                                    <div className="my-6 border-t pt-4 flex justify-between items-center">
+                                    <div className="my-6 border-t border-gray-200 pt-4 flex justify-between items-center">
                                         <p className="text-xl font-extrabold text-gray-900">Total à payer :</p>
-                                        <p className="text-2xl font-extrabold text-green-600">
+                                        <p className="text-2xl font-extrabold text-gray-900">
                                             {formatPrice(getTotal())} F CFA
                                         </p>
                                     </div>
@@ -386,8 +413,8 @@ const Panier = () => {
                                 </div>
 
                                 {/* BLOC 2.2: INFORMATIONS DE LIVRAISON ET PAIEMENT */}
-                                <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-                                    <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b pb-2">3. Adresse et Paiement</h3>
+                                <div className="!p-6 bg-white rounded-none shadow-lg border border-gray-200">
+                                    <h3 className="text-xl font-extrabold text-gray-900 !mb-4 border-b border-gray-200 !pb-4">3. Adresse et Paiement</h3>
                                     
                                     <div className="space-y-4">
                                         {/* Téléphone (Pré-rempli) */}
@@ -397,8 +424,7 @@ const Panier = () => {
                                             placeholder="Téléphone"
                                             value={form.telephone}
                                             onChange={handleChange}
-                                            className="w-full border px-4 py-2 rounded-lg bg-gray-50 disabled:opacity-80"
-                                            disabled 
+                                            className="w-full border border-gray-400 !my-2 !px-4 !py-1 rounded-none bg-gray-50 disabled:opacity-80"
                                         />
 
                                         {/* Adresse */}
@@ -408,11 +434,11 @@ const Panier = () => {
                                             placeholder="Adresse (cliquez/déplacez le marqueur sur la carte)"
                                             value={form.adresse}
                                             onChange={handleChange}
-                                            className="w-full border px-4 py-2 rounded-lg"
+                                            className="w-full border border-gray-400 !my-2 !px-4 !py-1 rounded-none"
                                         />
 
                                         {/* Carte Leaflet */}
-                                        <div className="h-64 rounded-lg overflow-hidden border border-gray-300">
+                                        <div className="h-64 rounded-none !my-2 overflow-hidden border border-gray-300 relative z-0">
                                             <MapContainer 
                                                 center={position} 
                                                 zoom={13} 
@@ -432,12 +458,12 @@ const Panier = () => {
                                             name="mode_paiement"
                                             value={form.mode_paiement}
                                             onChange={handleChange}
-                                            className="w-full border px-4 py-2 rounded-lg"
+                                            className="w-full border border-gray-400 !px-4 !py-1 !my-2 rounded-none"
                                         >
                                             <option value="paiement_livraison">Paiement à la livraison</option>
                                             <option value="wave">Wave</option>
                                             <option value="orange_money">Orange Money</option>
-                                            <option value="carte_bancaire">Carte Bancaire (Non disponible)</option>
+                                            <option value="carte_bancaire">Carte Bancaire</option>
                                         </select>
 
                                         {/* Erreur et Bouton Final */}
@@ -445,10 +471,10 @@ const Panier = () => {
 
                                         <button
                                             onClick={handleSubmit}
-                                            disabled={loading || cartItems.length === 0}
-                                            className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold shadow-lg hover:bg-green-700 transition disabled:opacity-50"
-                                        >
-                                            {loading ? 'Validation en cours...' : 'Confirmer la commande et payer'}
+                                            disabled={loading}
+                                            className="w-full bg-green-600 text-white !my-3 !py-2 rounded-none font-semibold hover:bg-green-700 transition"
+                                            >
+                                            {loading ? 'Validation...' : 'Valider la commande'}
                                         </button>
                                     </div>
                                 </div>

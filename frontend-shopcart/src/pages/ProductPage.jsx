@@ -136,7 +136,7 @@ function App() {
             <h2 className="text-3xl font-bold text-gray-800 flex justify-center gap-2">
                 Nos Produits Frais
             </h2>
-            <p className="text-gray-600 mt-2">Cultivés localement à Ross Béthio, Dagana</p>
+            <p className="text-gray-600 !mt-2">Cultivés localement à Ross Béthio, Dagana</p>
         </div>
 
         <div className="h-10"></div>

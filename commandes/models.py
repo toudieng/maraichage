@@ -20,7 +20,7 @@ MODE_PAIEMENT_CHOICES = [
 class Commande(models.Model):
     utilisateur = models.ForeignKey(Utilisateur, on_delete=models.CASCADE)
     date_commande = models.DateTimeField(auto_now_add=True)
-    statut = models.CharField(max_length=50, default='en cours')
+    # statut = models.CharField(max_length=50, default='en cours')
     total_prix = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     transaction_id = models.CharField(max_length=100, blank=True, null=True)
     adresse_livraison = models.CharField(max_length=255, null=True, blank=True)
@@ -42,11 +42,11 @@ class Commande(models.Model):
         ('livree', 'Livrée'),
     ]
 
-    statut = models.CharField(
-        max_length=20,
-        choices=STATUT_CHOICES,
-        default='en_attente' # Valeur par défaut
-    )
+    # statut = models.CharField(
+    #     max_length=20,
+    #     choices=STATUT_CHOICES,
+    #     default='en_attente' # Valeur par défaut
+    # )
 
 class Details_commande(models.Model):
     commande = models.ForeignKey(Commande, on_delete=models.CASCADE)

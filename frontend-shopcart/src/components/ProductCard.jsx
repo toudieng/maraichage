@@ -57,7 +57,7 @@ const ProductCard = ({ product }) => {
 
 
     return (
-        <div className="group bg-white !pb-2 rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full w-full min-w-[250px]"
+        <div className="group bg-white !pb-2 rounded-none shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full w-full min-w-[250px]"
             onClick={handleCardClick}
         >
             
@@ -87,15 +87,15 @@ const ProductCard = ({ product }) => {
             </div>
 
             {/* Content */}
-            <div className="px-5 py-4 flex flex-col flex-grow">
+            <div className="px-5 !py-4 flex flex-col flex-grow">
                 
                 {/* Titre */}
-                <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">
+                <h3 className="text-xl font-bold text-gray-800 !mb-1 line-clamp-1">
                     {name}
                 </h3>
                 
                 {/* Étoiles */}
-                <div className="flex items-center gap-1 mb-3">
+                <div className="flex items-center gap-1 !mb-2">
                     <div className="flex">
                         {renderStars(5)}
                     </div>
@@ -103,8 +103,8 @@ const ProductCard = ({ product }) => {
                 </div>
                 
                 {/* Prix */}
-                <div className="mt-auto mb-4">
-                    <p className="text-2xl font-bold text-black-600 mb-4">
+                <div className="!mt-auto mb-4">
+                    <p className="text-2xl font-bold text-black-600 !mb-4">
                         {parseFloat(price).toFixed(2)} F CFA
                     </p>
                     
@@ -116,7 +116,7 @@ const ProductCard = ({ product }) => {
                             handleAddToCart();
                         }}
                         disabled={isAdding}
-                        className="w-full sm:w-auto !px-2 !py-2 !ml-1 text-base font-semibold bg-white text-black border border-black rounded-lg 
+                        className="w-full sm:w-auto !px-2 !py-2 !ml-2 text-base font-semibold bg-white text-black border border-black rounded-lg 
                                 hover:bg-green-500 hover:text-white hover:border-green-500 
                                 transition-all duration-200 shadow-md transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                     >

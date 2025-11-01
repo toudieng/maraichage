@@ -1,145 +1,183 @@
+// src/pages/RegisterPage.jsx
 import { useState } from 'react';
 import { useToast } from '../components/Toast';
 import { Link, useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar'; // <-- Ajout de l'import
+import Footer from '../components/Footer'; // <-- Ajout de l'import
+import loginBackground from '../assets/connexion.jpg'; // <-- Import de l'image de fond (assumant le même nom)
 
 const RegisterPage = () => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password1, setPassword1] = useState('');
-  const [password2, setPassword2] = useState('');
-  const { showToast } = useToast();
-  const navigate = useNavigate();
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [password1, setPassword1] = useState('');
+    const [password2, setPassword2] = useState('');
+    const { showToast } = useToast();
+    const navigate = useNavigate();
+    const [isSubmitting, setIsSubmitting] = useState(false); // Gestion du chargement
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    if (password1 !== password2) {
-      showToast('Les mots de passe ne correspondent pas', 'error');
-      return;
-    }
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        if (password1 !== password2) {
+            showToast('Les mots de passe ne correspondent pas', 'error');
+            return;
+        }
 
-    try {
-      const response = await fetch('http://localhost:8000/api/register/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        credentials: 'include',
-        body: new URLSearchParams({
-          username,
-          email,
-          password1,
-          password2,
-        }),
-      });
+        setIsSubmitting(true);
+        try {
+            const response = await fetch('http://localhost:8000/api/register/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'include',
+                body: new URLSearchParams({
+                    username,
+                    email,
+                    password: password1, // Le nom du champ peut varier côté Django
+                    password2,
+                }),
+            });
 
-      const data = await response.json();
-      if (data.success) {
-        showToast('Inscription réussie !');
-        navigate('/');
-      } else {
-        showToast(data.error || 'Erreur lors de l’inscription', 'error');
-      }
-    } catch (error) {
-      console.error('Erreur serveur:', error);
-      showToast('Erreur serveur', 'error');
-    }
-  };
+            const data = await response.json();
+            if (data.success) {
+                showToast('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+                navigate('/connexion'); // Rediriger vers la page de connexion
+            } else {
+                showToast(data.error || 'Erreur lors de l’inscription', 'error');
+            }
+        } catch (error) {
+            console.error('Erreur serveur:', error);
+            showToast('Erreur serveur', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
-  return (
-    <div className="min-h-screen bg-white font-sans flex flex-col items-center justify-center px-4">
-      {/* Bloc d'inscription */}
-      <div className="w-full max-w-md p-8">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Inscription</h2>
-        <p className="text-sm text-gray-600 text-center mb-10">Créez votre compte Naatal Mbay</p>
+    return (
+        // Conteneur principal qui définit la hauteur totale
+        <div className="min-h-screen flex flex-col">
+            <Navbar />
 
-        <form onSubmit={handleRegister} className="space-y-8">
-          {/* Champ Nom d'utilisateur */}
-          <div className="space-y-4">
-            <label htmlFor="username" className="block text-sm text-gray-700">Nom d'utilisateur</label>
-            <div className="h-2"></div> 
-            <input
-              id="username"
-              type="text" 
-              placeholder="Nom d'utilisateur" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
-              required 
-              className="w-full px-3 py-3 h-8 text-sm text-gray-800 bg-white border border-gray-300 focus:outline-none focus:border-blue-600" 
-            />
-          </div>
+            <main 
+                className="flex-grow flex items-center justify-center !p-4 relative" 
+                style={{ backgroundImage: `url(${loginBackground})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+            >
+                {/* Superposition sombre, limitée au MAIN */}
+                <div className="absolute inset-0 bg-gray-900 opacity-60"></div>
+                
+                {/* Bloc d'inscription stylisé - z-10 pour être au-dessus de l'overlay */}
+                <div className="w-full max-w-lg bg-white !p-8 md:p-10 rounded-xl shadow-2xl border border-gray-100 relative !z-10 !my-8"> {/* Augmenté à max-w-lg pour plus de champs */}
+                    <h2 className="text-3xl font-extrabold text-gray-900 text-center !mb-4">
+                        Créer un Compte
+                    </h2>
+                    <p className="text-md text-gray-600 text-center !mb-8">
+                        Rejoignez la communauté Naatal Mbay
+                    </p>
 
-          <div className="h-3"></div>
+                    <form onSubmit={handleRegister} className="!space-y-6"> 
+                        
+                        {/* Champ Nom d'utilisateur */}
+                        <div>
+                            <label htmlFor="username" className="block text-sm font-medium text-gray-700 !mb-1">
+                                Nom d'utilisateur
+                            </label>
+                            <input
+                                id="username"
+                                type="text"
+                                placeholder="Nom d'utilisateur"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full !px-4 !py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-green-500 focus:border-gray-500" // Styles verts
+                                required
+                            />
+                        </div>
 
-          {/* Champ Email */}
-          <div className="space-y-4">
-            <label htmlFor="email" className="block text-sm text-gray-700">Email</label>
-            <div className="h-2"></div> 
-            <input 
-              id="email"
-              type="email" 
-              placeholder="Email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              required 
-              className="w-full px-3 py-3 h-8 text-sm text-gray-800 bg-white border border-gray-300 focus:outline-none focus:border-blue-600" 
-            />
-          </div>
+                        {/* Champ Email */}
+                        <div>
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 !mb-1">
+                                Email
+                            </label>
+                            <input
+                                id="email"
+                                type="email"
+                                placeholder="votre.email@exemple.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full !px-4 !py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-green-500 focus:border-gray-500" // Styles verts
+                                required
+                            />
+                        </div>
 
-          <div className="h-3"></div>
+                        {/* Champ Mot de passe */}
+                        <div>
+                            <label htmlFor="password1" className="block text-sm font-medium text-gray-700 !mb-1">
+                                Mot de passe
+                            </label>
+                            <input
+                                id="password1"
+                                type="password"
+                                placeholder="••••••••"
+                                value={password1}
+                                onChange={(e) => setPassword1(e.target.value)}
+                                className="w-full !px-4 !py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-green-500 focus:border-gray-500" // Styles verts
+                                required
+                            />
+                        </div>
 
-          {/* Champ Mot de passe */}
-          <div className="space-y-4">
-            <label htmlFor="password1" className="block text-sm text-gray-700">Mot de passe</label>
-            <div className="h-2"></div> 
-            <input 
-              id="password1"
-              type="password" 
-              placeholder="••••••••" 
-              value={password1} 
-              onChange={(e) => setPassword1(e.target.value)} 
-              required 
-              className="w-full px-3 py-4 h-8 text-sm text-gray-800 bg-white border border-gray-300 focus:outline-none focus:border-blue-600" 
-            />
-          </div>
+                        {/* Champ Confirmation Mot de passe */}
+                        <div>
+                            <label htmlFor="password2" className="block text-sm font-medium text-gray-700 !mb-1">
+                                Confirmer le mot de passe
+                            </label>
+                            <input
+                                id="password2"
+                                type="password"
+                                placeholder="••••••••"
+                                value={password2}
+                                onChange={(e) => setPassword2(e.target.value)}
+                                className="w-full !px-4 !py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-green-500 focus:border-gray-500" // Styles verts
+                                required
+                            />
+                        </div>
 
-          <div className="h-3"></div>
+                        {/* Bouton S'inscrire */}
+                        <div className="!pt-4">
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className={`w-full flex justify-center items-center !py-2 !px-4 border border-transparent rounded-lg shadow-md text-base font-medium text-white transition duration-200 
+                                    ${isSubmitting 
+                                        ? 'bg-green-400 cursor-not-allowed' 
+                                        : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'}`
+                                }
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 !mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Inscription...
+                                    </>
+                                ) : (
+                                    "S'inscrire"
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <p className="!mt-6 text-center text-sm text-gray-600">
+                        Vous avez déjà un compte ?{' '}
+                        <Link to="/connexion" className="text-green-600 hover:underline font-medium">
+                            Connectez-vous
+                        </Link>
+                    </p>
+                </div>
+            </main>
 
-          {/* Champ Confirmation Mot de passe */}
-          <div className="space-y-4">
-            <label htmlFor="password2" className="block text-sm text-gray-700">Confirmer le mot de passe</label>
-            <div className="h-2"></div> 
-            <input 
-              id="password2"
-              type="password" 
-              placeholder="••••••••" 
-              value={password2} 
-              onChange={(e) => setPassword2(e.target.value)} 
-              required 
-              className="w-full px-3 py-4 h-8 text-sm text-gray-800 bg-white border border-gray-300 focus:outline-none focus:border-blue-600" 
-            />
-          </div>
-
-          <div className="h-3"></div>
-
-          <div className="pt-2">
-            <button 
-              type="submit" 
-              className="w-full bg-blue-600 h-7 text-white py-4 text-sm font-semibold hover:bg-blue-700 transition-colors" /* Changement de couleur de vert à bleu et augmentation du padding py-4 */
-            >
-              S'inscrire
-            </button>
-          </div>
-        </form>
-        
-        <p className="mt-12 text-center text-sm text-gray-600">
-          Vous avez déjà un compte ?{' '}
-          <Link to="/connexion" className="text-blue-600 hover:underline font-medium">
-            Connectez-vous
-          </Link>
-        </p>
-      </div>
-    </div>
-  );
+            <Footer /> {/* <-- Footer inclus */}
+        </div>
+    );
 };
 
 export default RegisterPage;
