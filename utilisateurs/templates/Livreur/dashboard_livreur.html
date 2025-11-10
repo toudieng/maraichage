@@ -1,41 +1,65 @@
-{% extends "base.html" %} 
+{% extends "base_pro.html" %} 
+{% load static %}
 
 {% block title %}Tableau de Bord Livreur{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1>Tableau de Bord Livreur</h1>
-    <p>Bienvenue sur votre espace, {{ request.user.username }}.</p>
+<div class="py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold text-dark">
+            <i class="fas fa-truck text-warning me-2"></i> Tableau de Bord Livreur
+        </h1>
+    </div>
 
-    <h2>Commandes Prêtes à Livrer</h2>
+    <p class="lead">Bienvenue sur votre espace, <span class="fw-bold text-primary">{{ request.user.username }}</span>.</p>
     
-    {% if commandes_a_livrer %}
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>N° Commande</th>
-                    <th>Client</th>
-                    <th>Adresse</th>
-                    <th>Statut Actuel</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for commande in commandes_a_livrer %}
-                <tr>
-                    <td>{{ commande.id }}</td>
-                    <td>{{ commande.utilisateur.get_full_name|default:commande.utilisateur.username }}</td>
-                    <td>{{ commande.adresse_livraison }}</td>
-                    <td><span class="badge bg-warning">{{ commande.get_statut_display }}</span></td>
-                    <td>
-                        <a href="{% url 'valider_livraison' commande_id=commande.id %}" class="btn btn-sm btn-info">Valider Livraison</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>Aucune commande à livrer pour le moment.</p>
-    {% endif %}
+    <hr class="my-4">
+
+    <h2 class="h4 mb-3 fw-semibold">
+        Commandes Prêtes à Livrer ({{ commandes_a_livrer|length }})
+    </h2>
+    
+    <div class="card shadow-lg mb-5">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                {% if commandes_a_livrer %}
+                    <table class="table table-hover table-striped mb-0 align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="small text-muted text-uppercase" style="width: 10%;">N° Commande</th>
+                                <th class="small text-muted text-uppercase" style="width: 25%;">Client</th>
+                                <th class="small text-muted text-uppercase" style="width: 35%;">Adresse de Livraison</th>
+                                <th class="small text-muted text-uppercase" style="width: 15%;">Statut Actuel</th>
+                                <th class="small text-muted text-uppercase" style="width: 15%;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for commande in commandes_a_livrer %}
+                            <tr>
+                                <td class="fw-bold">#{{ commande.id }}</td>
+                                <td>{{ commande.utilisateur.get_full_name|default:commande.utilisateur.username }}</td>
+                                <td>
+                                    {{ commande.adresse_livraison|default:"<span class='text-danger'>Adresse non spécifiée</span>"|safe }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning text-dark fw-bold">{{ commande.get_statut_display }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'valider_livraison' commande_id=commande.id %}" class="btn btn-sm btn-info shadow-sm">
+                                        Valider Livraison
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="alert alert-info m-3 text-center" role="alert">
+                        🎉 Aucune commande n'est prête à être livrée pour le moment. 🎉
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -22,7 +22,7 @@ urlpatterns = [
     # Les deux noms d'URL pointent vers la même vue qui gère les deux actions (Connexion ET Inscription)
     path('connexion/', user_views.connexion_inscription, name='login'),
     path('inscription/', user_views.connexion_inscription, name='register'),
-    path('deconnexion/', auth_views.LogoutView.as_view(), name='logout'),
+    path('deconnexion/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     
     # SYSTEME DE REINITIALISATION DE MOT DE PASSE
     path('mot-de-passe/reset/', 

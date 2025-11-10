@@ -10,10 +10,20 @@ from django.contrib.auth import get_user_model
 from .models import Utilisateur
 from .forms import StaffUserCreationForm
 from .forms import UtilisateurUpdateForm
+from django.shortcuts import get_object_or_404
 
 # =============================================================
 # VUE UNIQUE POUR CONNEXION ET INSCRIPTION (fusion de auth_view et connexion_inscription)
 # =============================================================
+
+def redirection_dashboard(user):
+    if user.role == 'Administrateur':
+        return redirect('tableau_bord_commandes')
+    elif user.role == 'Livreur':
+        return redirect('tableau_de_bord_livreur')
+        
+    return redirect('home') 
+
 
 def connexion_inscription(request):
     login_form = AuthenticationForm(prefix='login')
@@ -26,27 +36,67 @@ def connexion_inscription(request):
                 user = login_form.get_user()
                 login(request, user)
                 messages.success(request, f"Bienvenue, {user.username} !")
-                if user.role == 'Administrateur':
-                    return redirect('tableau_bord_commandes')
-                elif user.role == 'Livreur':
-                    return redirect('tableau_de_bord_livreur')
-                return redirect('home')
+                
+                # 📌 REDIRECTION APRÈS CONNEXION
+                return redirection_dashboard(user)
+                
             else:
                 messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
+                
         elif 'register' in request.POST:
             register_form = InscriptionForm(request.POST, prefix='register')
             if register_form.is_valid():
                 user = register_form.save()
                 login(request, user)
                 messages.success(request, "Inscription réussie.")
-                return redirect('home')
+                
+                # 📌 REDIRECTION APRÈS INSCRIPTION
+                # L'InscriptionForm définit le rôle à 'Client', donc ils iront normalement à 'home'
+                return redirection_dashboard(user)
+                
             else:
                 messages.error(request, "Erreur lors de l'inscription.")
                 
+    # Si la méthode est GET ou si les formulaires ne sont pas valides, rendre la page
     return render(request, 'authentification/connexion.html', {
         'form': login_form,
         'register_form': register_form,
     })
+
+
+
+# def connexion_inscription(request):
+#     login_form = AuthenticationForm(prefix='login')
+#     register_form = InscriptionForm(prefix='register')
+
+#     if request.method == 'POST':
+#         if 'login' in request.POST:
+#             login_form = AuthenticationForm(request, data=request.POST, prefix='login')
+#             if login_form.is_valid():
+#                 user = login_form.get_user()
+#                 login(request, user)
+#                 messages.success(request, f"Bienvenue, {user.username} !")
+#                 if user.role == 'Administrateur':
+#                     return redirect('tableau_bord_commandes')
+#                 elif user.role == 'Livreur':
+#                     return redirect('tableau_de_bord_livreur')
+#                 return redirect('home')
+#             else:
+#                 messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
+#         elif 'register' in request.POST:
+#             register_form = InscriptionForm(request.POST, prefix='register')
+#             if register_form.is_valid():
+#                 user = register_form.save()
+#                 login(request, user)
+#                 messages.success(request, "Inscription réussie.")
+#                 return redirect('home')
+#             else:
+#                 messages.error(request, "Erreur lors de l'inscription.")
+                
+#     return render(request, 'authentification/connexion.html', {
+#         'form': login_form,
+#         'register_form': register_form,
+#     })
 
 
 
@@ -55,11 +105,9 @@ def connexion_inscription(request):
 # =============================================================
 
 def logout_view(request):
-    # Utilisation de l'alias 'auth_logout' défini dans l'import
     auth_logout(request)
     messages.success(request, "Déconnexion réussie.")
     
-    # Redirige vers la page de connexion (nom 'login' dans urls.py)
     return redirect('login')
 
 
@@ -126,19 +174,14 @@ def tableau_bord_utilisateurs(request):
 
 # 2. Vue Ajouter un Utilisateur
 @login_required
-@user_passes_test(lambda u: u.is_superuser) # Seul un Superuser peut créer
+@user_passes_test(lambda u: u.is_superuser) 
 def ajouter_utilisateur(request):
-    # Nous utilisons StaffUserCreationForm pour gérer la création du mot de passe
     if request.method == 'POST':
         form = StaffUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            
-            # 🚨 Si votre StaffUserCreationForm ne gère pas le champ 'role',
-            # vous devrez le définir ici manuellement si vous voulez qu'il ne soit pas 'Client'.
-            # Exemple: user.role = Utilisateur.ADMINISTRATEUR si c'est un Admin créé.
-            
-            messages.success(request, f"L'utilisateur **{user.username}** a été créé avec succès.")
+            # Le save() du formulaire personnalisé gère le rôle et is_staff
+            user = form.save() 
+            messages.success(request, f"L'utilisateur **{user.username}** (Rôle: {user.role}) a été créé avec succès.")
             return redirect('tableau_bord_utilisateurs')
         else:
             messages.error(request, "Erreur lors de la création de l'utilisateur. Vérifiez les champs.")

@@ -70,7 +70,64 @@ class UtilisateurUpdateForm(forms.ModelForm):
 
 
 class StaffUserCreationForm(UserCreationForm):
+    # Ajoutez le champ 'role' en le définissant explicitement
+    role = forms.ChoiceField(
+        choices=Utilisateur.ROLE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        initial=Utilisateur.CLIENT # Rôle par défaut si non spécifié
+    )
+    
+    # Ajoutez le champ 'is_staff' pour donner l'accès à l'espace pro
+    is_staff = forms.BooleanField(
+        label="Accès à l'espace PRO (Staff/Livreur)",
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
     class Meta(UserCreationForm.Meta):
-        model = User
-        # N'incluez que les champs que vous voulez modifier (ajoutez first_name, last_name si nécessaire)
-        fields = ('username', 'email', 'first_name', 'last_name', 'is_staff')
+        model = Utilisateur
+        fields = (
+            'username', 
+            'email', 
+            'first_name', 
+            'last_name', 
+            # Les champs de mot de passe sont hérités de UserCreationForm.Meta.fields
+        )
+
+    # Surcharge de __init__ pour ajouter les classes Bootstrap aux champs restants
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # 📌 CORRECTION DE L'ERREUR DE MOT DE PASSE :
+        # On itère sur les champs pour appliquer 'form-control',
+        # MAIS on exclut explicitement les champs de mot de passe pour éviter un conflit d'initialisation.
+        for name, field in self.fields.items():
+            
+            # Exclure les champs de mot de passe de la boucle d'application de classe
+            if name in ['password', 'password2']: 
+                continue
+                
+            # Appliquer 'form-control' aux champs de texte/email (méthode générique)
+            if isinstance(field.widget, (forms.TextInput, forms.EmailInput)):
+                field.widget.attrs.update({'class': 'form-control'})
+                
+            # Appliquer 'form-select' spécifiquement au champ 'role'
+            if name == 'role':
+                 field.widget.attrs.update({'class': 'form-select'})
+    
+    # Surcharge de la méthode save() pour gérer is_staff en fonction du rôle
+    def save(self, commit=True):
+        user = super().save(commit=False)
+
+        # ✅ On récupère le rôle choisi dans le formulaire
+        user.role = self.cleaned_data.get('role')
+
+        # ✅ Gestion du statut staff selon le rôle
+        if user.role in [Utilisateur.ADMINISTRATEUR, Utilisateur.LIVREUR]:
+            user.is_staff = True
+        else:
+            user.is_staff = self.cleaned_data.get('is_staff', False)
+
+        if commit:
+            user.save()
+        return user

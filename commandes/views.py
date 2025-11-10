@@ -526,24 +526,6 @@ def is_staff_user(user):
     return user.is_staff
 
 
-# @login_required
-# @user_passes_test(is_staff_user)
-# def tableau_bord_commandes(request):
-#     commandes_qs = Commande.objects.all().order_by('-date_commande')
-
-#     commandes_data = []
-#     for commande in commandes_qs:
-#         statut_form = StatutCommandeForm(instance=commande)
-#         commandes_data.append({
-#             'commande': commande,
-#             'statut_form': statut_form,
-#         })
-
-#     context = {
-#         'commandes_data': commandes_data,
-#     }
-#     return render(request, 'tableau_bord_commandes.html', context)
-
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def tableau_bord_commandes(request):

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_pro.html" %}
 
 {% block title %}Confirmation de Livraison{% endblock %}
 
@@ -6,24 +6,44 @@
 <div class="container mt-5">
     <h1>Confirmer la Livraison de la Commande N°{{ commande.id }}</h1>
     
-    <p>Client : {{ commande.utilisateur.get_full_name }}</p>
-    <p>Adresse de livraison : {{ commande.adresse_livraison }}</p>
-    <p>Total : {{ commande.total_prix|floatformat:0 }} FCFA</p>
-    
-    <hr>
+    <div class="card p-4 shadow-sm mb-4">
+        <p class="mb-1">Client : <span class="fw-bold text-primary">{{ commande.utilisateur.get_full_name|default:commande.utilisateur.username }}</span></p>
+        
+        <hr class="my-2">
+        
+        <p class="mb-1">
+            Adresse de livraison : 
+            <span class="{% if not commande.adresse_livraison %}text-danger fw-bold{% endif %}">
+                <i class="fas fa-map-marker-alt me-1"></i> {{ commande.adresse_livraison|default:"ADRESSE MANQUANTE" }}
+            </span>
+        </p>
+        
+        <p class="mb-1">
+            Téléphone : 
+            <span class="{% if not commande.telephone_livraison %}text-danger fw-bold{% endif %}">
+                <i class="fas fa-phone me-1"></i> {{ commande.telephone_livraison|default:"TÉLÉPHONE MANQUANT" }}
+            </span>
+        </p>
+        
+        <hr class="my-2">
+        
+        <p class="mb-0 h4">Total : <span class="fw-bold text-success">{{ commande.total_prix|floatformat:0 }} FCFA</span></p>
+    </div>
 
     <h2>Action du Livreur</h2>
-    <p>Utilisez ce bouton uniquement après avoir reçu le paiement et remis les marchandises au client.</p>
+    <p class="text-muted">Utilisez ce bouton uniquement après avoir reçu le paiement et remis les marchandises au client.</p>
 
     <form method="POST" action="{% url 'valider_livraison' commande_id=commande.id %}">
         {% csrf_token %}
         <input type="hidden" name="statut" value="livree">
         
-        <button type="submit" class="btn btn-success btn-lg">
-            Confirmer la Livraison et Marquer comme Livrée
+        <button type="submit" class="btn btn-success btn-lg shadow-sm">
+            <i class="fas fa-check-circle"></i> Confirmer la Livraison et Marquer comme Livrée
         </button>
     </form>
     
-    <a href="{% url 'tableau_de_bord_livreur' %}" class="btn btn-secondary mt-3">Retour au Tableau de Bord</a>
+    <a href="{% url 'tableau_de_bord_livreur' %}" class="btn btn-secondary mt-3">
+        <i class="fas fa-arrow-left"></i> Retour au Tableau de Bord
+    </a>
 </div>
 {% endblock %}
