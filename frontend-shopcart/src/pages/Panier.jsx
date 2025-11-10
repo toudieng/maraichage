@@ -157,6 +157,15 @@ const Panier = () => {
         }));
     }, [position]);
 
+    useEffect(() => {
+        // Obtenir le token CSRF au chargement
+        axios.get('http://localhost:8000/api/csrf/', {
+            withCredentials: true,
+        }).catch(err => console.error('Erreur CSRF:', err));
+
+        // ... reste de votre code useEffect
+    }, []);
+
 
     useEffect(() => {
         // Le endpoint pour récupérer les infos utilisateur
@@ -188,6 +197,22 @@ const Panier = () => {
             ...prev,
             [itemId]: value,
         }));
+    };
+
+    // Fonction pour récupérer le token CSRF depuis les cookies
+    const getCookie = (name) => {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     };
 
     // Mise à jour de la quantité lors du blur de l'input
@@ -233,22 +258,43 @@ const Panier = () => {
     };
 
     try {
-      const res = await axios.post('http://localhost:8000/api/commande/valider/', payload, {
+        const csrftoken = getCookie('csrftoken');
+        
+        const res = await axios.post('http://localhost:8000/api/commande/valider/', payload, {
         withCredentials: true,
+        headers: {
+                    'X-CSRFToken': csrftoken,  // Ajout du token CSRF
+                    'Content-Type': 'application/json',
+                },
       });
 
-      if (res.data.success) {
-        if (res.data.checkout_url) {
-          window.location.href = res.data.checkout_url;
-        } else if (res.data.commande_id) {
-          clearCart();
-          navigate(`/commande/${res.data.commande_id}`);
+    //   if (res.data.success) {
+    //     if (res.data.checkout_url) {
+    //       window.location.href = res.data.checkout_url;
+    //     } else if (res.data.commande_id) {
+    //       clearCart();
+    //       navigate(`/commande/${res.data.commande_id}`);
+    //     } else {
+    //       setError("Commande validée mais aucune redirection fournie.");
+    //     }
+    //   } else {
+    //     setError(res.data.error || 'Erreur inconnue');
+    //   }
+    if (res.data.success) {
+            // ✅ Vérifier le mode de paiement
+            if (res.data.mode === 'paiement_livraison') {
+                // Paiement à la livraison : rediriger vers les détails
+                clearCart();
+                navigate(`/commande/${res.data.commande_id}`);
+            } else if (res.data.checkout_url) {
+                // PayDunya : rediriger vers la plateforme
+                window.location.href = res.data.checkout_url;
+            } else {
+                setError("Erreur : mode de paiement inconnu");
+            }
         } else {
-          setError("Commande validée mais aucune redirection fournie.");
+            setError(res.data.error || 'Erreur inconnue');
         }
-      } else {
-        setError(res.data.error || 'Erreur inconnue');
-      }
     } catch (err) {
       console.error('Erreur lors de la validation :', err);
       setError('Erreur lors de la validation de la commande');

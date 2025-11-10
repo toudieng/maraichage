@@ -42,11 +42,11 @@ class Commande(models.Model):
         ('livree', 'Livrée'),
     ]
 
-    # statut = models.CharField(
-    #     max_length=20,
-    #     choices=STATUT_CHOICES,
-    #     default='en_attente' # Valeur par défaut
-    # )
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT_CHOICES,
+        default='en_attente' # Valeur par défaut
+    )
 
 class Details_commande(models.Model):
     commande = models.ForeignKey(Commande, on_delete=models.CASCADE)

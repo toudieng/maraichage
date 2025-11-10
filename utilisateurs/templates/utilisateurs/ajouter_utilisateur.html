@@ -1,0 +1,44 @@
+{% extends "base_pro.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Ajouter Utilisateur{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1 class="display-5 fw-bold text-dark mb-4">
+        Ajouter un Nouvel Utilisateur
+    </h1>
+    
+    <div class="card shadow-lg">
+        <div class="card-body">
+            <form method="POST">
+                {% csrf_token %}
+
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+                        {{ field|add_class:"form-control" }}
+                        {% for error in field.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                        {% if field.help_text %}
+                            <small class="text-muted">{{ field.help_text }}</small>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                
+                <hr>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'tableau_bord_utilisateurs' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Annuler
+                    </a>
+                    <button type="submit" class="btn btn-success shadow-sm">
+                        <i class="fas fa-save"></i> Créer l'Utilisateur
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}

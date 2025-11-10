@@ -1,64 +1,121 @@
-{% extends "base.html" %}
+{% extends "base_pro.html" %}
+{% load widget_tweaks %}
 
 {% block title %}Tableau de Bord des Commandes{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1>Tableau de Bord des Commandes (Admin)</h1>
-    <p class="text-danger">🚨 Cette page n'est visible que par le personnel (Staff). 🚨</p>
-    <hr>
+<div class="py-4">
     
-    <h2>Toutes les Commandes</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold text-dark">
+            {% if is_search %}
+                Résultats de Recherche pour "{{ query }}"
+            {% else %}
+                Tableau de Bord des Commandes
+            {% endif %}
+        </h1>
+        {% if is_search %}
+             <a href="{% url 'tableau_bord_commandes' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-undo"></i> Retour
+            </a>
+        {% endif %}
+    </div>
     
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                <th>N° Commande</th>
-                <th>Client</th>
-                <th>Téléphone / Adresse</th>
-                <th>Total</th>
-                <th>Statut Actuel</th>
-                <th>Mise à Jour</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in commandes_data %}
-            <tr>
-                <td>{{ item.commande.id }}</td>
-                <td>{{ item.commande.utilisateur.get_full_name|default:item.commande.utilisateur.username }}</td>
-                <td>
-                    <small>Tel: {{ item.commande.telephone_livraison }}</small><br>
-                    <small>Adresse: {{ item.commande.adresse_livraison }}</small>
-                </td>
-                <td>{{ item.commande.total_prix|floatformat:0 }} FCFA</td>
-                
-                <td>
-                    <span class="badge 
-                        {% if item.commande.statut == 'en_attente' %}bg-warning text-dark
-                        {% elif item.commande.statut == 'validée' %}bg-info 
-                        {% elif item.commande.statut == 'livree' %}bg-success
-                        {% elif item.commande.statut == 'annulee' %}bg-danger
-                        {% endif %}">
-                        {{ item.commande.get_statut_display }}
-                    </span>
-                </td>
+    <p class="text-danger small mb-5">🚨 Espace Administrateur et Staff. 🚨</p>
 
-                <td>
-                    <form method="POST" action="{% url 'mettre_a_jour_statut' commande_id=item.commande.id %}" class="d-flex">
-                        {% csrf_token %}
-                        
-                        {{ item.statut_form.statut }}
-                        
-                        <button type="submit" class="btn btn-sm btn-primary ms-2">OK</button>
-                    </form>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6">Aucune commande trouvée.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% if is_search and is_admin and utilisateurs_trouves %}
+        <div class="card shadow-sm mb-4 border-info">
+            <div class="card-body bg-info bg-opacity-10">
+                <h3 class="card-title h5 text-info fw-bold">👤 Utilisateurs trouvés ({{ utilisateurs_trouves|length }}) :</h3>
+                <ul class="list-group list-group-flush mt-3">
+                    {% for user in utilisateurs_trouves %}
+                        <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center small">
+                            <strong>{{ user.get_full_name|default:user.username }}</strong> 
+                            ({{ user.email }})
+                            <a href="/admin/auth/user/{{ user.id }}/change/" target="_blank" class="btn btn-sm btn-outline-primary">
+                                Voir / Modifier →
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+    
+    <h2 class="h4 mb-3 fw-semibold">
+        {% if is_search %}
+            Commandes correspondantes ({{ commandes_data|length }})
+        {% else %}
+            Toutes les Commandes
+        {% endif %}
+    </h2>
+
+    <div class="card shadow-lg mb-5">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="small text-muted text-uppercase" style="width: 10%;">N° Commande</th>
+                            <th class="small text-muted text-uppercase" style="width: 20%;">Client</th>
+                            <th class="small text-muted text-uppercase" style="width: 30%;">Téléphone / Adresse</th>
+                            <th class="small text-muted text-uppercase" style="width: 10%;">Total</th>
+                            <th class="small text-muted text-uppercase" style="width: 15%;">Statut Actuel</th>
+                            <th class="small text-muted text-uppercase" style="width: 15%;">Mise à Jour</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in commandes_data %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'details_commande' commande_id=item.commande.id %}" class="fw-bold text-primary text-decoration-none">
+                                    #{{ item.commande.id }}
+                                </a>
+                            </td>
+                            <td>{{ item.commande.utilisateur.get_full_name|default:item.commande.utilisateur.username }}</td>
+                            <td>
+                                <small class="d-block text-muted">Tel: {{ item.commande.telephone_livraison }}</small>
+                                <small class="d-block text-muted">Adresse: {{ item.commande.adresse_livraison }}</small>
+                            </td>
+                            <td><span class="fw-bold text-success">{{ item.commande.total_prix|floatformat:0 }} FCFA</span></td>
+                            
+                            <td>
+                                <span class="badge rounded-pill 
+                                    {% if item.commande.statut == 'en_attente' %}bg-warning text-dark
+                                    {% elif item.commande.statut == 'validée' %}bg-info 
+                                    {% elif item.commande.statut == 'livree' %}bg-success
+                                    {% elif item.commande.statut == 'annulee' %}bg-danger
+                                    {% else %}bg-secondary
+                                    {% endif %}">
+                                    {{ item.commande.get_statut_display }}
+                                </span>
+                            </td>
+
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <form method="POST" action="{% url 'mettre_a_jour_statut' commande_id=item.commande.id %}" class="d-flex align-items-center">
+                                    {% csrf_token %}
+                                    
+                                    {{ item.statut_form.statut|add_class:"form-select form-select-sm shadow-sm" }}
+                                    
+                                    <button type="submit" class="btn btn-sm btn-primary ms-2 shadow-sm">OK</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                {% if is_search %}
+                                    Aucune commande trouvée pour "{{ query }}".
+                                {% else %}
+                                    Aucune commande n'est encore enregistrée.
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

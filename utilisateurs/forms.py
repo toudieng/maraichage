@@ -1,6 +1,9 @@
 from django.contrib.auth.forms import UserCreationForm
 from .models import Utilisateur
 from django import forms
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class InscriptionForm(UserCreationForm):
     
@@ -64,3 +67,10 @@ class UtilisateurUpdateForm(forms.ModelForm):
         widgets = {
             'adresse': forms.Textarea(attrs={'rows': 3}),
         }
+
+
+class StaffUserCreationForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = User
+        # N'incluez que les champs que vous voulez modifier (ajoutez first_name, last_name si nécessaire)
+        fields = ('username', 'email', 'first_name', 'last_name', 'is_staff')

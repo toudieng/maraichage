@@ -13,7 +13,7 @@ import imgFraicheur from '../assets/eng-fraicheur.jpg';
 import imgPompe from '../assets/pompe_solaire.jpg';
 import imgCroissance from '../assets/croissance.jpg';
 import imgRentabilite from '../assets/rentabilite.jpg';
-import imgCtaBackground from '../assets/rv.jpg';
+import imageNewCtaBackground from '../assets/im3.jpg';
 
 
 const CarouselCategoryCard = ({ image, name, description }) => (
@@ -162,7 +162,8 @@ const ResultCard = ({ image, title, description, link }) => (
 );
 
 const HomePage = () => {
-  const heroImage = im1;
+    const heroImage = im1;
+    const ctaImage = imageNewCtaBackground;
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const nextSlide = () => {
@@ -199,14 +200,14 @@ const HomePage = () => {
             <div className="h-10"></div>
 
             <p className="text-xl md:text-2xl mb-8 font-light drop-shadow-md">
-              "Contribuer au développement de l'économie sénégalaise en qualité et en quantité."
+              Contribuer au développement de l'économie sénégalaise en qualité et en quantité.
             </p>
 
             <div className="h-4"></div>
 
             {/* Paragraphe : max-w-2xl centre le bloc, mx-auto centre le bloc, text-center centre le texte à l'intérieur du bloc */}
             <p className="text-base mb-10 mx-auto font-normal text-center">
-                Nous vous garantissons des **légumes frais et de première qualité** (tomates, oignons, piments, etc.)  grâce à notre unité moderne de production maraîchère à Fatick. En utilisant des **techniques innovantes** comme les pompes solaires et l'arrosage goutte à goutte, nous assurons une **production continue** pour le marché national et international. Consommer nos produits, c'est choisir l'excellence tout en soutenant l'**autosuffisance alimentaire** et la **création d'emplois locaux** au Sénégal.
+                Nous vous garantissons des légumes frais et de première qualité (tomates, oignons, piments, etc.)  grâce à notre unité moderne de production maraîchère à Fatick. En utilisant des techniques innovantes comme les pompes solaires et l'arrosage goutte à goutte, nous assurons une production continue pour le marché national et international. Consommer nos produits, c'est choisir l'excellence tout en soutenant l'autosuffisance alimentaire et la création d'emplois locaux au Sénégal.
             </p>
 
             <div className="h-15"></div>
@@ -366,10 +367,10 @@ const HomePage = () => {
 
         {/* --- SECTION APPEL À L'ACTION (MODIFIÉE) --- */}
         <section 
-            className="relative bg-cover bg-center h-[450px] text-white py-20 flex items-center justify-center"
-            style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(${imgCtaBackground})` }}
+            className="relative bg-cover bg-center h-[450px] text-white !py-20 flex items-center justify-center rounded-none shadow-2xl" 
+            style={{ backgroundImage: `url(${ctaImage})` }}
         >
-            <div className="max-w-4xl mx-auto px-4 text-center z-10">
+            <div className="max-w-4xl mx-auto !px-4 text-center !z-10 bg-green-800/75 !p-10 rounded-none">
                 <h3 className="text-4xl md:text-5xl font-extrabold !mb-10 drop-shadow-lg">
                     Prêt à Passer Commande ?
                 </h3>
@@ -381,13 +382,13 @@ const HomePage = () => {
                 <div className="flex justify-center flex-wrap">
                     <a 
                         href="/produits" 
-                        className="inline-block !px-10 !py-1 bg-green-500 text-white text-xl font-bold rounded-lg shadow-xl hover:bg-green-600 transition-colors transform hover:scale-105 !mx-4 !my-2"
+                        className="inline-block !px-10 !py-2 bg-green-400 text-gray-900 text-xl font-bold rounded-lg shadow-xl hover:bg-green-300 transition-colors transform hover:scale-105 !mx-4 !my-2"
                     >
                         Voir Tous les Produits
                     </a>
                     <a 
                         href="/contact" 
-                        className="inline-block !px-10 !py-1 border-2 border-white text-white text-xl font-bold rounded-lg shadow-xl hover:bg-white hover:text-green-700 transition-colors transform hover:scale-105 !mx-4 !my-2"
+                        className="inline-block !px-10 !py-2 border-2 border-white text-white text-xl font-bold rounded-lg shadow-xl hover:bg-white hover:text-green-800 transition-colors transform hover:scale-105 !mx-4 !my-2"
                     >
                         Nous Contacter
                     </a>

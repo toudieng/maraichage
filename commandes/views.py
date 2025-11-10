@@ -13,6 +13,7 @@ from .forms import StatutCommandeForm
 from django.contrib import messages
 from utilisateurs.views import is_livreur
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import get_user_model
 from maraichage_ecommerce.paydunya_sdk.checkout import CheckoutInvoice, PaydunyaSetup 
 
 @login_required
@@ -525,22 +526,78 @@ def is_staff_user(user):
     return user.is_staff
 
 
-@login_required
-@user_passes_test(is_staff_user)
-def tableau_bord_commandes(request):
-    commandes_qs = Commande.objects.all().order_by('-date_commande')
+# @login_required
+# @user_passes_test(is_staff_user)
+# def tableau_bord_commandes(request):
+#     commandes_qs = Commande.objects.all().order_by('-date_commande')
 
+#     commandes_data = []
+#     for commande in commandes_qs:
+#         statut_form = StatutCommandeForm(instance=commande)
+#         commandes_data.append({
+#             'commande': commande,
+#             'statut_form': statut_form,
+#         })
+
+#     context = {
+#         'commandes_data': commandes_data,
+#     }
+#     return render(request, 'tableau_bord_commandes.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def tableau_bord_commandes(request):
+    """
+    Affiche toutes les commandes pour l'Admin/Manager, 
+    et gère également la recherche sur cette même page.
+    """
+    query = request.GET.get('query', None)
+    
+    # 1. Requête de base pour les commandes
+    commandes_qs = Commande.objects.select_related('utilisateur').all().order_by('-date_commande')
+
+    if query:
+        # Si un terme de recherche est présent, on filtre
+        commandes_qs = commandes_qs.filter(
+            Q(id__icontains=query) | 
+            Q(utilisateur__username__icontains=query) |
+            Q(adresse_livraison__icontains=query) |
+            Q(utilisateur__first_name__icontains=query) |
+            Q(utilisateur__last_name__icontains=query)
+        ).distinct()
+
+        # (OPTIONNEL) Recherche d'Utilisateurs si c'est un Superuser
+        utilisateurs_trouves = []
+        if request.user.is_superuser:
+            User = get_user_model()
+            utilisateurs_trouves = User.objects.filter(
+                Q(username__icontains=query) |
+                Q(email__icontains=query)
+            ).distinct()
+    else:
+        # Si pas de recherche, toutes les commandes sont affichées
+        utilisateurs_trouves = []
+        
+        # NOTE: Limitez ceci à 50 ou 100 si vous avez beaucoup de commandes
+        # commandes_qs = commandes_qs[:100]
+
+
+    # 2. Préparation des données pour le template (comme dans votre code actuel)
     commandes_data = []
     for commande in commandes_qs:
-        statut_form = StatutCommandeForm(instance=commande)
         commandes_data.append({
             'commande': commande,
-            'statut_form': statut_form,
+            'statut_form': StatutCommandeForm(initial={'statut': commande.statut}),
         })
 
     context = {
         'commandes_data': commandes_data,
+        'query': query, # Ajout de la requête au contexte
+        'is_search': bool(query), # Indique si on est en mode recherche
+        'is_admin': request.user.is_superuser, # Indique le rôle
+        'utilisateurs_trouves': utilisateurs_trouves, # Ajout des utilisateurs trouvés
     }
+
     return render(request, 'tableau_bord_commandes.html', context)
 
 @login_required

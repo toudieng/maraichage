@@ -41,10 +41,11 @@ const Navbar = () => {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false); 
   const navigate = useNavigate();
   const { getTotalItems, cartItems, getTotal, removeFromCart, clearCart } = useCart();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({ username: 'Mon Compte' });
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const isConnected = user && user.username !== "Mon Compte";
+  // const isConnected = user && user.username !== "Mon Compte";
+  const [isConnected, setIsConnected] = useState(false);
 
   // Fonction pour ouvrir/fermer le popover du panier
   const toggleCart = () => {
@@ -74,18 +75,41 @@ const Navbar = () => {
     }, [isCartOpen]);
 
   // 1. Récupération des informations utilisateur (Logique inchangée)
-  useEffect(() => {
-    const defaultUser = { username: "Mon Compte" }; 
-
+    useEffect(() => {
     axios.get('http://localhost:8000/api/user/', { withCredentials: true })
-      .then(res => {
-        setUser(res.data);
-      })
-      .catch(err => {
-        console.error("Erreur lors de la récupération de l'utilisateur :", err);
-        setUser(defaultUser);
-      });
-  }, []);
+        .then(res => {
+          console.log("Réponse /api/user/", res.data);
+
+          if (res.data.authenticated) {
+            setUser(res.data);
+            setIsConnected(true);
+          } else {
+            setUser({ username: 'Mon Compte' });
+            setIsConnected(false);
+          }
+          // setUser(res.data);
+          // setIsConnected(true);
+        })
+        .catch(err => {
+            console.error("Erreur lors de la récupération de l'utilisateur :", err);
+            // Si échec (non connecté), réinitialisez à la valeur par défaut
+            setUser({ username: 'Mon Compte' });
+            setIsConnected(false);
+        });
+}, []);
+
+  // useEffect(() => {
+  //   const defaultUser = { username: "Mon Compte" }; 
+
+  //   axios.get('http://localhost:8000/api/user/', { withCredentials: true })
+  //     .then(res => {
+  //       setUser(res.data);
+  //     })
+  //     .catch(err => {
+  //       console.error("Erreur lors de la récupération de l'utilisateur :", err);
+  //       setUser(defaultUser);
+  //     });
+  // }, []);
 
   // 2. Logique des suggestions de recherche (Logique inchangée)
   useEffect(() => {
@@ -133,21 +157,41 @@ const Navbar = () => {
   // 6. Logique de déconnexion (Logique inchangée)
   const handleLogout = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/logout/', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (res.ok) {
-        await clearCart();
-        setUser(null);
-        navigate('/');
-      } else {
-        console.error("Échec de la déconnexion sur le serveur");
-      }
+        const res = await fetch('http://localhost:8000/api/logout/', {
+            method: 'POST',
+            credentials: 'include',
+        });
+        if (res.ok) {
+            await clearCart();
+            // Réinitialiser les deux états :
+            setUser({ username: 'Mon Compte' }); // Rétablit la valeur affichée par défaut
+            setIsConnected(false);              // Déconnecte explicitement
+            navigate('/');
+        } else {
+            console.error("Échec de la déconnexion sur le serveur");
+        }
     } catch (err) {
-      console.error("Erreur de réseau lors de la déconnexion :", err);
+        console.error("Erreur de réseau lors de la déconnexion :", err);
     }
-  };
+};
+
+  // const handleLogout = async () => {
+  //   try {
+  //     const res = await fetch('http://localhost:8000/api/logout/', {
+  //       method: 'POST',
+  //       credentials: 'include',
+  //     });
+  //     if (res.ok) {
+  //       await clearCart();
+  //       setUser(null);
+  //       navigate('/');
+  //     } else {
+  //       console.error("Échec de la déconnexion sur le serveur");
+  //     }
+  //   } catch (err) {
+  //     console.error("Erreur de réseau lors de la déconnexion :", err);
+  //   }
+  // };
 
   return (
     <header className="bg-white sticky top-0 z-50 shadow-sm">
@@ -296,7 +340,7 @@ const Navbar = () => {
                 {/* Menu déroulant du compte */}
                 <div className="absolute right-0 !mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
                   <div className="!px-4 !py-2.5 text-xs text-gray-500 border-b bg-gray-50">
-                    {isConnected ? `Bonjour, ${user.username}` : 'Mon compte'}
+                    {isConnected ? `Bonjour, ${user.username}` : user.username}
                   </div>
 
                   {isConnected ? (

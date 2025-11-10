@@ -15,6 +15,7 @@ urlpatterns = [
 
     path('gestion/', views.tableau_bord_commandes, name='tableau_bord_commandes'),
     path('gestion/update_statut/<int:commande_id>/', views.mettre_a_jour_statut, name='mettre_a_jour_statut'),
+    path('recherche/', views.tableau_bord_commandes, name='admin_search'),
 
     path('livreur/dashboard/', views.tableau_de_bord_livreur, name='tableau_de_bord_livreur'),
     path('livreur/valider/<int:commande_id>/', views.valider_livraison, name='valider_livraison'),

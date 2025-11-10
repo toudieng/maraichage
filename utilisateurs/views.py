@@ -2,12 +2,14 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout as auth_logout # Renomme logout pour éviter les conflits
 from django.contrib import messages # IMPORTANT : Assurez-vous d'importer les messages
 from django.contrib.auth.forms import AuthenticationForm 
-# Assurez-vous que InscriptionForm est dans utilisateurs/forms.py
 from .forms import InscriptionForm 
 from django.contrib.auth.decorators import login_required
 from .forms import UtilisateurUpdateForm
 from django.contrib.auth.decorators import login_required, user_passes_test
-
+from django.contrib.auth import get_user_model
+from .models import Utilisateur
+from .forms import StaffUserCreationForm
+from .forms import UtilisateurUpdateForm
 
 # =============================================================
 # VUE UNIQUE POUR CONNEXION ET INSCRIPTION (fusion de auth_view et connexion_inscription)
@@ -95,3 +97,140 @@ def hub_compte(request):
 def is_livreur(user):
     # Assurez-vous que le rôle 'Livreur' est défini dans votre modèle Utilisateur
     return user.role == 'Livreur'
+
+
+User = get_user_model() 
+
+def is_gestionnaire(user):
+    # On utilise is_staff ou is_superuser pour déterminer l'accès à la gestion Pro
+    return user.is_active and (user.is_staff or user.is_superuser)
+
+
+# 1. Vue Liste (Maintenant liste TOUS les utilisateurs actifs)
+@login_required
+@user_passes_test(is_gestionnaire)
+def tableau_bord_utilisateurs(request):
+    """
+    Liste tous les utilisateurs actifs.
+    """
+    # Liste tous les utilisateurs actifs, triés par rôle Admin/Staff d'abord
+    utilisateurs_qs = Utilisateur.objects.filter(is_active=True).order_by('-is_superuser', '-is_staff', 'username')
+    
+    context = {
+        'utilisateurs_qs': utilisateurs_qs,
+        'is_admin': request.user.is_superuser,
+    }
+    
+    return render(request, 'utilisateurs/tableau_bord_utilisateurs.html', context)
+
+
+# 2. Vue Ajouter un Utilisateur
+@login_required
+@user_passes_test(lambda u: u.is_superuser) # Seul un Superuser peut créer
+def ajouter_utilisateur(request):
+    # Nous utilisons StaffUserCreationForm pour gérer la création du mot de passe
+    if request.method == 'POST':
+        form = StaffUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            
+            # 🚨 Si votre StaffUserCreationForm ne gère pas le champ 'role',
+            # vous devrez le définir ici manuellement si vous voulez qu'il ne soit pas 'Client'.
+            # Exemple: user.role = Utilisateur.ADMINISTRATEUR si c'est un Admin créé.
+            
+            messages.success(request, f"L'utilisateur **{user.username}** a été créé avec succès.")
+            return redirect('tableau_bord_utilisateurs')
+        else:
+            messages.error(request, "Erreur lors de la création de l'utilisateur. Vérifiez les champs.")
+    else:
+        form = StaffUserCreationForm()
+        
+    context = {'form': form, 'page_title': "Ajouter un Utilisateur"}
+    return render(request, 'utilisateurs/ajouter_utilisateur.html', context)
+
+
+# 3. Vue Modifier (Rôle et Infos basiques)
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def modifier_utilisateur(request, user_id):
+    user_a_modifier = get_object_or_404(Utilisateur, pk=user_id)
+    
+    # Empêcher l'édition de son propre rôle/statut
+    if user_a_modifier.pk == request.user.pk:
+        messages.error(request, "Vous ne pouvez pas modifier vos propres droits ou profil depuis cette interface.")
+        return redirect('tableau_bord_utilisateurs') 
+    
+    if request.method == 'POST':
+        # Utilisez UtilisateurUpdateForm pour les champs étendus (téléphone, adresse, email...)
+        form = UtilisateurUpdateForm(request.POST, instance=user_a_modifier)
+        
+        # Logique pour les booléens (is_staff, is_superuser) et le champ role (s'ils sont inclus dans le formulaire)
+        if form.is_valid():
+            user = form.save(commit=False)
+            
+            # Logique spécifique aux rôles
+            role_choisi = request.POST.get('role')
+            if role_choisi in [r[0] for r in Utilisateur.ROLE_CHOICES]:
+                user.role = role_choisi
+                
+            # Logique is_staff/is_superuser
+            user.is_staff = request.POST.get('is_staff') == 'on'
+            user.is_superuser = request.POST.get('is_superuser') == 'on'
+
+            user.save()
+            messages.success(request, f"L'utilisateur **{user.username}** a été mis à jour.")
+            return redirect('tableau_bord_utilisateurs')
+    else:
+        form = UtilisateurUpdateForm(instance=user_a_modifier)
+
+    context = {
+        'form': form,
+        'user_a_modifier': user_a_modifier,
+    }
+    
+    return render(request, 'utilisateurs/modifier_utilisateur.html', context)
+
+
+# 4. Vue Supprimer (Désactiver)
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def supprimer_utilisateur(request, user_id):
+    user_a_supprimer = get_object_or_404(Utilisateur, id=user_id)
+    
+    if user_a_supprimer == request.user:
+        messages.error(request, "Vous ne pouvez pas désactiver votre propre compte.")
+        return redirect('tableau_bord_utilisateurs')
+        
+    if request.method == 'POST':
+        user_a_supprimer.is_active = False # Désactivation logique
+        user_a_supprimer.save()
+        messages.warning(request, f"L'utilisateur **{user_a_supprimer.username}** a été désactivé.")
+        return redirect('tableau_bord_utilisateurs')
+        
+    context = {
+        'user_a_supprimer': user_a_supprimer
+    }
+    # Assurez-vous d'avoir ce template : utilisateurs/confirmer_suppression.html
+    return render(request, 'utilisateurs/confirmer_suppression.html', context)
+# 3. Vue pour Supprimer (Désactiver) un Utilisateur
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def supprimer_utilisateur(request, user_id):
+    user_a_supprimer = get_object_or_404(User, id=user_id)
+    
+    # Empêcher la suppression de son propre compte
+    if user_a_supprimer == request.user:
+        messages.error(request, "Opération non autorisée.")
+        return redirect('tableau_bord_utilisateurs')
+        
+    if request.method == 'POST':
+        # Bonne pratique: on désactive (suppression logique) plutôt que de supprimer définitivement
+        user_a_supprimer.is_active = False 
+        user_a_supprimer.save()
+        messages.success(request, f"L'utilisateur {user_a_supprimer.username} a été désactivé.")
+        return redirect('tableau_bord_utilisateurs')
+        
+    context = {
+        'user_a_supprimer': user_a_supprimer
+    }
+    return render(request, 'utilisateurs/confirmer_suppression.html', context)

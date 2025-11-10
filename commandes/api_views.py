@@ -17,6 +17,7 @@ import os
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
+from django.views.decorators.csrf import ensure_csrf_cookie
 from maraichage_ecommerce.paydunya_sdk.checkout import CheckoutInvoice, PaydunyaSetup
 
 
@@ -146,7 +147,8 @@ def api_clear_panier(request):
         return JsonResponse({'success': False, 'error': 'Panier introuvable'}, status=404)
 
 
-@csrf_exempt
+# @csrf_exempt
+@ensure_csrf_cookie
 @login_required
 def api_valider_commande(request):
     if request.method != 'POST':
@@ -205,6 +207,14 @@ def api_valider_commande(request):
             # Vider le panier après validation
             details_du_panier.delete()
 
+        if mode_paiement == 'paiement_livraison':
+            print(f"✅ Commande #{commande.id} créée avec paiement à la livraison")
+            return JsonResponse({
+                'success': True,
+                'commande_id': commande.id,
+                'mode': 'paiement_livraison'
+            })
+
         webhook_url_final = request.build_absolute_uri(
         reverse('paydunya_webhook')
         )
@@ -231,6 +241,7 @@ def api_valider_commande(request):
 
             invoice.total_amount = float(total)
             invoice.description = f"Commande #{commande.id} - Maraîchage Ecommerce"
+            invoice.callback_url = webhook_url_final
             invoice.return_url = return_url_final
             invoice.cancel_url = request.build_absolute_uri(reverse('voir_panier'))
 
@@ -240,13 +251,26 @@ def api_valider_commande(request):
                 commande.transaction_id = token
                 commande.save()
 
-                return JsonResponse({'success': True, 'checkout_url': checkout_url})
+                print(f"✅ Commande #{commande.id} créée avec PayDunya, redirection vers {checkout_url}")
+                return JsonResponse({
+                    'success': True, 
+                    'checkout_url': checkout_url,
+                    'mode': 'paydunya'
+                })
+
+                # return JsonResponse({'success': True, 'checkout_url': checkout_url})
             else:
+                print(f"❌ Échec création invoice PayDunya : {invoice.response_text}")
                 return JsonResponse({
                     'success': False,
                     'error': invoice.response_text,
                     'commande_id': commande.id
                 }, status=400)
+                # return JsonResponse({
+                #     'success': False,
+                #     'error': invoice.response_text,
+                #     'commande_id': commande.id
+                # }, status=400)
 
         except Exception as e:
             print(f"Erreur PayDunya : {e}")
@@ -258,8 +282,112 @@ def api_valider_commande(request):
 
     except Exception as e:
         import traceback
+        print("--- Début Traceback Django (Erreur 500) ---")
         traceback.print_exc()
-        return JsonResponse({'error': str(e)}, status=500)
+        print("--- Fin Traceback Django ---")
+        return JsonResponse({
+            'error': 'Erreur interne du serveur lors de la validation.',
+            'detail': str(e)
+        }, status=500)
+
+
+@login_required
+def api_verify_payment(request, commande_id):
+    try:
+        commande = get_object_or_404(Commande, id=commande_id, utilisateur=request.user)
+        
+        print(f"🔍 Vérification du paiement pour commande #{commande.id}")
+        print(f"📊 Statut actuel : {commande.statut}")
+        print(f"🎫 Transaction ID : {commande.transaction_id}")
+        print(f"💳 Mode de paiement : {commande.mode_paiement}")
+        
+        if commande.mode_paiement == 'paiement_livraison':
+            print(f"ℹ️ Commande #{commande.id} en paiement à la livraison, pas de vérification PayDunya")
+            return JsonResponse({
+                'success': True,
+                'statut': commande.statut,
+                'message': 'Paiement à la livraison'
+            })
+
+        # Si déjà payée, retourner directement
+        if commande.statut == 'validée':
+            print(f"✅ Commande #{commande.id} déjà validée")
+            return JsonResponse({
+                'success': True,
+                'statut': 'validée',
+                'message': 'Paiement déjà confirmé'
+            })
+        
+        # Si pas de transaction_id, erreur
+        if not commande.transaction_id:
+            print(f"❌ Pas de transaction_id pour commande #{commande.id}")
+            return JsonResponse({
+                'success': False,
+                'statut': commande.statut,
+                'message': 'Aucun paiement initié'
+            }, status=400)
+        
+        # Vérification auprès de PayDunya
+        invoice = CheckoutInvoice()
+        confirmation = invoice.confirm(commande.transaction_id)
+        
+        print(f"📦 Réponse PayDunya : {confirmation}")
+        
+        if confirmation and confirmation.get("status") == "completed":
+            # Paiement confirmé !
+            with transaction.atomic():
+                commande.statut = 'validée'
+                commande.save()
+                print(f"✅ Commande #{commande.id} marquée comme validée")
+            
+            return JsonResponse({
+                'success': True,
+                'statut': 'validée',
+                'message': 'Paiement confirmé avec succès'
+            })
+
+        elif confirmation and confirmation.get("status") == "cancelled":
+            # ✅ Paiement annulé par l'utilisateur
+            with transaction.atomic():
+                commande.statut = 'annulee'
+                commande.save()
+                print(f"❌ Commande #{commande.id} annulée (paiement annulé)")
+            
+            return JsonResponse({
+                'success': False,
+                'statut': 'annulee',
+                'message': 'Paiement annulé'
+            }, status=400)
+
+        else:
+            # Paiement non confirmé ou échoué
+            statut_paydunya = confirmation.get("status") if confirmation else "inconnu"
+            print(f"❌ Paiement non confirmé : {statut_paydunya}")
+            
+            if statut_paydunya not in ['pending', 'en_attente']:
+                with transaction.atomic():
+                    commande.statut = 'annulee'
+                    commande.save()
+                    print(f"❌ Commande #{commande.id} annulée (statut: {statut_paydunya})")
+            
+            return JsonResponse({
+                'success': False,
+                'statut': commande.statut,
+                'message': f'Paiement non confirmé (statut: {statut_paydunya})'
+            }, status=400)
+    
+    except Exception as e:
+        print(f"❌ Erreur lors de la vérification : {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=500)
+
+@ensure_csrf_cookie
+def get_csrf_token(request):
+    return JsonResponse({'detail': 'CSRF cookie set'})
 
 @login_required
 def api_commande_detail(request, id):
@@ -316,28 +444,53 @@ def api_paydunya_webhook(request):
         return JsonResponse({"status": "failed", "message": "Méthode non autorisée"}, status=405)
 
     try:
+        print("🔔 Webhook PayDunya reçu")
+        print(f"📦 Body reçu : {request.body}")
+
         data = json.loads(request.body)
         invoice_token = data.get('invoice_token')
+        statut = data.get('status')
+
+        print(f"🎫 Token : {invoice_token}")
+        print(f"📊 Statut PayDunya : {statut}")
 
         invoice_checker = CheckoutInvoice()
         if not invoice_checker.check_hash(data):
+            print("❌ Hash invalide")
             return JsonResponse({"status": "failed", "message": "Hash invalide"}, status=403)
 
-        commande = get_object_or_404(Commande, transaction_id=invoice_token)
-        statut = data.get('status')
+        try:
+            commande = get_object_or_404(Commande, transaction_id=invoice_token)
+            print(f"✅ Commande trouvée : #{commande.id} | Statut actuel : {commande.statut}")
+        except Commande.DoesNotExist:
+            print(f"❌ Commande introuvable pour le token : {invoice_token}")
+            return JsonResponse({"status": "failed", "message": "Commande introuvable"}, status=404)
+
 
         with transaction.atomic():
             if statut == 'completed' and commande.statut == 'en_attente':
-                commande.statut = 'payee'
+                commande.statut = 'validée'
                 commande.save()
+                print(f"✅ Commande #{commande.id} marquée comme validée")
             elif statut == 'failed' and commande.statut == 'en_attente':
                 commande.statut = 'annulee'
                 commande.save()
+                print(f"❌ Commande #{commande.id} marquée comme annulée")
+            else:
+                print(f"⚠️ Aucune mise à jour (statut PayDunya: {statut}, statut commande: {commande.statut})")
+
 
         return JsonResponse({"status": "success", "commande_id": commande.id})
 
+    except json.JSONDecodeError as e:
+        print(f"❌ Erreur JSON : {e}")
+        return JsonResponse({"status": "error", "message": "JSON invalide"}, status=400)
     except Exception as e:
+        print(f"❌ Erreur webhook : {e}")
+        import traceback
+        traceback.print_exc()
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
 
 @login_required
 def api_facture_commande(request, id):

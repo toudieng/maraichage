@@ -1,0 +1,59 @@
+{% extends "base_pro.html" %}
+
+{% block title %}Modifier Rôle{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1 class="display-5 fw-bold text-dark mb-4">
+        Modifier Rôle de: {{ user_a_modifier.username }}
+    </h1>
+    
+    {% if not request.user.is_superuser %}
+        <div class="alert alert-danger">
+            Seul un **Super Administrateur** peut modifier les rôles des autres utilisateurs.
+        </div>
+    {% else %}
+        <div class="card shadow-lg">
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nom d'utilisateur</label>
+                        <p class="form-control-static">{{ user_a_modifier.username }}</p>
+                    </div>
+
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="isStaffSwitch" name="is_staff" 
+                               {% if user_a_modifier.is_staff %}checked{% endif %}>
+                        <label class="form-check-label fw-bold" for="isStaffSwitch">
+                            Est Staff (Accès à l'Espace Pro)
+                        </label>
+                        <small class="d-block text-muted">Cochez si cet utilisateur est un livreur ou un gestionnaire.</small>
+                    </div>
+
+                    <div class="mb-4 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="isSuperuserSwitch" name="is_superuser" 
+                               {% if user_a_modifier.is_superuser %}checked{% endif %}>
+                        <label class="form-check-label fw-bold text-danger" for="isSuperuserSwitch">
+                            Est Superuser (Accès Admin Total)
+                        </label>
+                        <small class="d-block text-danger">ATTENTION: Donne un contrôle total sur l'application.</small>
+                    </div>
+                    
+                    <hr>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'tableau_bord_utilisateurs' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                        <button type="submit" class="btn btn-success shadow-sm">
+                            <i class="fas fa-user-edit"></i> Appliquer les Rôles
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock content %}

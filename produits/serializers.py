@@ -16,6 +16,7 @@ class ProduitSerializer(serializers.ModelSerializer):
             'prix_saison_seche',
             'prix_saison_pluies',
             'image',
+            'stock',
             'prix_actuel',
             'image_url',
         )

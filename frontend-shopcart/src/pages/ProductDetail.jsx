@@ -39,9 +39,21 @@ const ProductDetail = () => {
   // Récupération sécurisée des données
   const currentPrice = product.prix_actuel || 0;
   const imageUrl = product.image_url;
+  const stockQuantity = product.stock || 0; 
+  const isOutOfStock = stockQuantity <= 0;
   
   // Fonction pour gérer l'ajout au panier (à implémenter)
   const handleAddToCart = () => {
+    if (isOutOfStock) {
+      console.log("Produit en rupture de stock.");
+      return; // Empêche l'ajout si en rupture de stock
+    }
+    if (quantity > stockQuantity) {
+      console.log("Quantité demandée supérieure au stock disponible.");
+      // Vous pouvez ajouter ici une alerte ou un message d'erreur pour l'utilisateur
+      return;
+    }
+
     addToCart(product, quantity);
     console.log(`Ajout de ${quantity}x ${product.nom} au panier.`);
   };
@@ -96,6 +108,11 @@ const ProductDetail = () => {
                 <p className="text-lg text-gray-600 !mb-4">
                     Produit frais et local, livré directement de la ferme.
                 </p>
+
+                {/* 🛒 Affichage du stock */}
+                <p className={`text-sm font-semibold !mb-4 ${isOutOfStock ? 'text-red-500' : 'text-green-600'}`}>
+                    Stock Disponible : {isOutOfStock ? 'Rupture de stock' : `${stockQuantity} Kg`}
+                </p>
                 
                 {/* Prix */}
                 <p className="text-4xl font-bold text-gray-900 !mb-8 border-b !pb-4 border-gray-300">
@@ -104,11 +121,12 @@ const ProductDetail = () => {
                 </p>
 
                 {/* 1. Bloc de contrôle de quantité (nouvellement séparé) */}
-                <div className="flex items-center space-x-4 !mb-4">
+                <div className="flex items-center space-x-4 !mb-4 ${isOutOfStock ? 'opacity-50 pointer-events-none' : ''}">
                     <span className="text-gray-700 font-medium !mr-5">Quantité  :</span>
                     <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden shadow-sm">
                         <button
                             onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                            disabled={isOutOfStock}
                             className="px-4 py-2 text-xl font-semibold text-gray-600 hover:bg-gray-100 transition"
                         >
                             -
@@ -116,13 +134,15 @@ const ProductDetail = () => {
                         <input
                             type="number"
                             value={quantity}
-                            onChange={handleQuantityChange} // Utilisation de la nouvelle fonction
-                            min="1" // Empêche le navigateur de descendre sous 1 (en plus de la logique JS)
+                            onChange={handleQuantityChange}
+                            disabled={isOutOfStock}
+                            min="1"
                             className="w-16 text-center text-lg border-l border-r border-gray-300 focus:outline-none"
                             style={{ appearance: 'none' }} // Retire les flèches du navigateur (pour un meilleur style)
                         />
                         <button 
                             onClick={() => setQuantity(q => q + 1)}
+                            disabled={isOutOfStock || quantity >= stockQuantity}
                             className="px-4 py-2 text-xl font-semibold text-gray-600 hover:bg-gray-100 transition"
                         >
                             +
@@ -134,9 +154,10 @@ const ProductDetail = () => {
                 <div className="!mb-8">
                     <button
                         onClick={handleAddToCart}
+                        disabled={isOutOfStock}
                         className="w-50 !py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition-colors shadow-lg"
                     >
-                        Ajouter au panier
+                        {isOutOfStock ? 'Rupture de stock' : 'Ajouter au panier'}
                     </button>
                 </div>
                 

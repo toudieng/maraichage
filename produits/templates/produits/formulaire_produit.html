@@ -1,0 +1,99 @@
+{% extends "base_pro.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ action_label }} Produit{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1 class="display-5 fw-bold text-dark mb-4">
+        {{ action_label }} un Produit
+    </h1>
+
+    <div class="card shadow-lg">
+        <div class="card-body">
+            
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {# Affichage des erreurs non liées aux champs #}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                {# Champ Nom #}
+                <div class="mb-3">
+                    <label for="{{ form.nom.id_for_label }}" class="form-label fw-bold">Nom</label>
+                    {{ form.nom|add_class:"form-control" }}
+                    {% if form.nom.errors %}<small class="text-danger">{{ form.nom.errors }}</small>{% endif %}
+                </div>
+
+                {# Champ Description #}
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">Description</label>
+                    {{ form.description|add_class:"form-control" }}
+                    {% if form.description.errors %}<small class="text-danger">{{ form.description.errors }}</small>{% endif %}
+                </div>
+
+                <div class="row">
+                    {# Champ Prix Saison Sèche #}
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.prix_saison_seche.id_for_label }}" class="form-label fw-bold">Prix Saison Sèche (FCFA)</label>
+                        {{ form.prix_saison_seche|add_class:"form-control" }}
+                        {% if form.prix_saison_seche.errors %}<small class="text-danger">{{ form.prix_saison_seche.errors }}</small>{% endif %}
+                    </div>
+                    
+                    {# Champ Prix Saison Pluies #}
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.prix_saison_pluies.id_for_label }}" class="form-label fw-bold">Prix Saison Pluies (FCFA)</label>
+                        {{ form.prix_saison_pluies|add_class:"form-control" }}
+                        {% if form.prix_saison_pluies.errors %}<small class="text-danger">{{ form.prix_saison_pluies.errors }}</small>{% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    {# Champ Stock #}
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.stock.id_for_label }}" class="form-label fw-bold">Stock</label>
+                        {{ form.stock|add_class:"form-control" }}
+                        {% if form.stock.errors %}<small class="text-danger">{{ form.stock.errors }}</small>{% endif %}
+                    </div>
+                    
+                    {# Champ Catégorie #}
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.categorie.id_for_label }}" class="form-label fw-bold">Catégorie</label>
+                        {{ form.categorie|add_class:"form-select" }}
+                        {% if form.categorie.errors %}<small class="text-danger">{{ form.categorie.errors }}</small>{% endif %}
+                    </div>
+                </div>
+
+                {# Champ Image #}
+                <div class="mb-4">
+                    <label for="{{ form.image.id_for_label }}" class="form-label fw-bold">Image actuelle</label>
+                    {% if produit and produit.image %}
+                        <div>
+                            <img src="{{ produit.image.url }}" alt="{{ produit.nom }}" style="max-height: 100px;" class="img-thumbnail mb-2">
+                        </div>
+                    {% endif %}
+                    {# Le champ de type file doit être laissé en brut ou stylisé via un label custom #}
+                    {{ form.image }} 
+                    {% if form.image.errors %}<small class="text-danger d-block mt-1">{{ form.image.errors }}</small>{% endif %}
+                </div>
+                
+                <hr>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'tableau_bord_produits' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Annuler
+                    </a>
+                    <button type="submit" class="btn btn-success shadow-sm">
+                        <i class="fas fa-save"></i> Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+</div>
+{% endblock content %}

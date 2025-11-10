@@ -35,6 +35,8 @@ const getStatusClasses = (statut) => {
     switch (statut) {
         case 'en_attente':
             return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+        case 'validée':
+            return 'bg-green-100 text-green-800 border border-green-300';
         case 'en_cours':
             return 'bg-blue-100 text-blue-800 border border-blue-300';
         case 'livree':
@@ -54,28 +56,127 @@ const CommandePage = () => {
   const { id } = useParams();
   const [commande, setCommande] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    axios.get(`http://localhost:8000/api/commande/${id}/`, {
-      withCredentials: true,
-    })
-    .then(res => {
-      setCommande(res.data.commande);
-    })
-    .catch(err => {
-      setError('Erreur lors du chargement de la commande');
-      console.error(err);
-    })
-    .finally(() => {
-      setLoading(false);
-    });
-  }, [id]);
 
-  if (loading) return <div className="min-h-screen bg-gray-50 flex justify-center items-center"><div className="text-xl text-gray-600 p-10">Chargement...</div></div>;
-  if (error) return <div className="min-h-screen bg-gray-50 flex justify-center items-center"><div className="p-8 text-red-600 border border-red-300 bg-red-50 rounded-lg shadow-md">{error}</div></div>;
-  if (!commande) return <div className="min-h-screen bg-gray-50 flex justify-center items-center"><div className="p-8 text-gray-600 border border-gray-300 bg-gray-50 rounded-lg shadow-md">Commande introuvable.</div></div>;
+useEffect(() => {
+    // 🔍 ÉTAPE 1 : Vérifier le statut du paiement auprès de PayDunya
+    const verifyPayment = async () => {
+      try {
+        console.log(`🔍 Vérification du paiement pour commande #${id}...`);
+        const res = await axios.get(
+          `http://localhost:8000/api/commande/${id}/verify-payment/`,
+          { withCredentials: true }
+        );
+        console.log("✅ Vérification réussie:", res.data);
+        
+        // Si le paiement a été confirmé, afficher un message
+        if (res.data.statut === 'validée') {
+          console.log("🎉 Paiement confirmé !");
+        }
+      } catch (err) {
+        console.error("⚠️ Erreur lors de la vérification du paiement:", err.response?.data);
+        // On ne bloque pas l'affichage si la vérification échoue
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    // 📦 ÉTAPE 2 : Charger les détails de la commande
+    const loadCommande = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:8000/api/commande/${id}/`,
+          { withCredentials: true }
+        );
+        setCommande(res.data.commande);
+      } catch (err) {
+        setError('Erreur lors du chargement de la commande');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Exécuter la vérification puis charger la commande
+    verifyPayment().then(() => loadCommande());
+  }, [id]);
+
+  // États de chargement
+  if (loading || verifying) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex justify-center items-center" style={{ minHeight: 'calc(100vh - 200px)' }}>
+          <div className="text-center">
+            {verifying && (
+              <div className="mb-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-3"></div>
+                <p className="text-lg text-gray-600">Vérification du paiement...</p>
+              </div>
+            )}
+            {!verifying && loading && (
+              <div className="mb-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-3"></div>
+                <p className="text-lg text-gray-600">Chargement de la commande...</p>
+              </div>
+            )}
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex justify-center items-center" style={{ minHeight: 'calc(100vh - 200px)' }}>
+          <div className="p-8 text-red-600 border border-red-300 bg-red-50 rounded-lg shadow-md max-w-md">
+            {error}
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!commande) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex justify-center items-center" style={{ minHeight: 'calc(100vh - 200px)' }}>
+          <div className="p-8 text-gray-600 border border-gray-300 bg-gray-50 rounded-lg shadow-md max-w-md">
+            Commande introuvable.
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+//   useEffect(() => {
+//     axios.get(`http://localhost:8000/api/commande/${id}/`, {
+//       withCredentials: true,
+//     })
+//     .then(res => {
+//       setCommande(res.data.commande);
+//     })
+//     .catch(err => {
+//       setError('Erreur lors du chargement de la commande');
+//       console.error(err);
+//     })
+//     .finally(() => {
+//       setLoading(false);
+//     });
+//   }, [id]);
+
+//   if (loading) return <div className="min-h-screen bg-gray-50 flex justify-center items-center"><div className="text-xl text-gray-600 p-10">Chargement...</div></div>;
+//   if (error) return <div className="min-h-screen bg-gray-50 flex justify-center items-center"><div className="p-8 text-red-600 border border-red-300 bg-red-50 rounded-lg shadow-md">{error}</div></div>;
+//   if (!commande) return <div className="min-h-screen bg-gray-50 flex justify-center items-center"><div className="p-8 text-gray-600 border border-gray-300 bg-gray-50 rounded-lg shadow-md">Commande introuvable.</div></div>;
 
   const position = [commande.latitude || 14.7645, commande.longitude || -17.3660];
   const statutClasses = getStatusClasses(commande.statut);
@@ -90,6 +191,19 @@ const CommandePage = () => {
             <a href="/commandes" onClick={(e) => { e.preventDefault(); navigate('/commandes'); }} className="hover:text-green-600">Mes Commandes</a> &gt; Commande #{commande.id}
         </div>
 
+        {/* Message de confirmation si paiement validé */}
+        {commande.statut === 'validée' && (
+          <div className="bg-green-50 border border-green-300 text-green-800 !px-6 !py-4 rounded-lg !mb-6 shadow-sm">
+            <div className="flex items-center">
+              <span className="text-2xl !mr-3">✅</span>
+              <div>
+                <p className="font-bold text-lg">Paiement confirmé !</p>
+                <p className="text-sm">Votre commande a été validée et est en cours de préparation.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 3. Bloc principal de contenu (fond blanc, ombre, padding) - Réplique de ProductDetail */}
         <div className="bg-white !p-6 md:p-10 shadow-lg rounded-xl">
 
@@ -98,7 +212,7 @@ const CommandePage = () => {
             <h2 className="text-3xl font-extrabold text-gray-900 !mb-2 sm:mb-0">
               Commande <span className="text-gray-900">#{commande.id}</span>
             </h2>
-            <span className={`px-3 !py-1 text-sm font-semibold rounded-full uppercase ${statutClasses}`}>
+            <span className={`!px-3 !py-1 text-sm font-semibold rounded-full uppercase ${statutClasses}`}>
               {commande.statut.replace('_', ' ')}
             </span>
           </div>

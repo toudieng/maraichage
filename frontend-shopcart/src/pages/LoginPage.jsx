@@ -16,13 +16,14 @@ const LoginPage = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
+        
         try {
             const response = await fetch('http://localhost:8000/api/login/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                credentials: 'include',
+                credentials: 'include',  // ✅ CRITIQUE
                 body: new URLSearchParams({
                     username,
                     password,
@@ -30,9 +31,13 @@ const LoginPage = () => {
             });
 
             const data = await response.json();
+            
             if (response.ok && data.success) {
-                showToast(data.message || 'Connexion réussie !');
-                navigate('/');
+                console.log("✅ Connexion réussie", data);
+                showToast('Connexion réussie !');
+                
+                // ✅ IMPORTANT : Rechargement complet pour forcer la mise à jour
+                window.location.href = '/';  // Ou window.location.reload()
             } else {
                 showToast(data.error || 'Identifiants incorrects', 'error');
             }
@@ -43,6 +48,37 @@ const LoginPage = () => {
             setIsSubmitting(false);
         }
     };
+
+    // const handleLogin = async (e) => {
+    //     e.preventDefault();
+    //     setIsSubmitting(true);
+    //     try {
+    //         const response = await fetch('http://localhost:8000/api/login/', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/x-www-form-urlencoded',
+    //             },
+    //             credentials: 'include',
+    //             body: new URLSearchParams({
+    //                 username,
+    //                 password,
+    //             }),
+    //         });
+
+    //         const data = await response.json();
+    //         if (response.ok && data.success) {
+    //             showToast(data.message || 'Connexion réussie !');
+    //             navigate('/');
+    //         } else {
+    //             showToast(data.error || 'Identifiants incorrects', 'error');
+    //         }
+    //     } catch (error) {
+    //         console.error('Erreur de connexion:', error);
+    //         showToast('Erreur serveur', 'error');
+    //     } finally {
+    //         setIsSubmitting(false);
+    //     }
+    // };
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -69,7 +105,7 @@ const LoginPage = () => {
                         <div>
                             <label 
                                 htmlFor="username" 
-                                className="block text-sm font-medium text-gray-700 !mb-2" 
+                                className="block text-sm font-medium text-gray-700 !mb-1" 
                             >
                                 Nom d'utilisateur
                             </label>
@@ -138,8 +174,7 @@ const LoginPage = () => {
                 </div>
             </main>
 
-            <Footer /> {/* <-- Le Footer est maintenant en dehors du MAIN, donc non assombri */}
-        </div>
+            </div>
     );
 };
 

@@ -1,0 +1,237 @@
+{% load static %}
+
+<header>
+    
+    {# 1. DEFINITION DE BASE (simple 'with') #}
+    {% with is_admin=user.is_superuser %} 
+        
+        {# 2. DEFINITION DE is_livreur dans un bloc IF #}
+        {# La valeur par défaut de is_livreur sera false si on n'entre pas dans le bloc #}
+        {% if user.is_staff and not is_admin %}
+            {% with is_livreur=True %}
+                {# Le reste de la navbar sera inclus ici #}
+
+                <div class="bg-dark text-white p-1" style="font-size: 0.75rem;">
+                    <div class="container-fluid d-flex justify-content-between align-items-center px-4">
+                        <span class="font-weight-bold text-muted">
+                            Espace Pro | 
+                            {% if is_admin %}<span class="text-danger">ADMINISTRATEUR</span>
+                            {% elif is_livreur %}<span class="text-warning">LIVREUR</span> 
+                            {% else %}<span class="text-muted">STAFF</span>
+                            {% endif %}
+                        </span>
+                        <span class="text-muted">
+                            Connecté : <strong>{{ user.username|default:"Pro" }}</strong>
+                        </span>
+                    </div>
+                </div>
+                
+                <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm border-bottom sticky-top" style="padding-top: 0.75rem; padding-bottom: 0.75rem;">
+                    <div class="container-fluid px-4"> 
+
+                        <a href="{% if is_livreur %}{% url 'tableau_de_bord_livreur' %}{% else %}{% url 'tableau_bord_commandes' %}{% endif %}" 
+                           class="navbar-brand d-flex align-items-center fw-bold text-dark">
+                            <span class="me-2 fs-4">
+                                {% if is_livreur %}🚚{% else %}📊{% endif %}
+                            </span>
+                            <span class="d-none d-sm-inline">
+                                {% if is_livreur %}Tableau Livreur{% else %}Gestion Pro{% endif %}
+                            </span>
+                        </a>
+
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarProContent" aria-controls="navbarProContent" aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+
+                        <div class="collapse navbar-collapse" id="navbarProContent">
+                            
+                            <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-medium"> 
+                                
+                                {% if is_admin %}
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark" href="{% url 'tableau_bord_commandes' %}">Gestion Commandes</a>
+                                    </li>
+                                {% endif %}
+
+                                {# La variable is_livreur est définie ici grâce au with ci-dessus #}
+                                {% if is_admin or is_livreur %} 
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark" href="{% url 'tableau_de_bord_livreur' %}">Mes Livraisons</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% if is_admin %}
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark" href="/admin/produits/">Produits</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark" href="/admin/auth/user/">Utilisateurs</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+
+                            <div class="d-flex align-items-center gap-3">
+
+                                <form class="d-flex" action="{% url 'admin_search' %}" method="get">
+                                    <div class="input-group">
+                                        <input
+                                            type="text"
+                                            name="query"
+                                            placeholder="Rechercher Commande..."
+                                            class="form-control form-control-sm border-0 bg-light rounded-pill ps-3"
+                                            style="width: 200px; background-color: #f0f0f0; border: none; padding-right: 2.5rem;"
+                                        />
+                                        <button type="submit" class="btn btn-sm text-dark position-absolute end-0 top-50 translate-middle-y" style="z-index: 10;">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <div class="nav-item dropdown">
+                                    <a class="nav-link text-dark" href="#" id="navbarDropdownAccountPro" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-user-circle me-1 fs-5"></i> 
+                                        <span class="d-none d-lg-inline">{{ user.username }}</span>
+                                    </a>
+
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="navbarDropdownAccountPro">
+                                        <li class="dropdown-header text-muted small border-bottom">
+                                            {{ user.email|default:user.username }}
+                                        </li>
+                                        <li><a class="dropdown-item" href="{% url 'admin:password_change' %}">Paramètres</a></li>
+                                        
+                                        {% if is_admin %}
+                                            <li><a href="/admin/" target="_blank" class="dropdown-item text-primary border-top mt-1">Admin Django</a></li>
+                                        {% endif %}
+
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form action="{% url 'logout' %}" method="post">
+                                                {% csrf_token %}
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    Se déconnecter
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            {% endwith %}
+        {% else %}
+            {# Si l'utilisateur n'est pas livreur (staff non-admin), on inclut toute la navbar mais is_livreur=False #}
+            {% with is_livreur=False %}
+                
+                <div class="bg-dark text-white p-1" style="font-size: 0.75rem;">
+                    <div class="container-fluid d-flex justify-content-between align-items-center px-4">
+                        <span class="font-weight-bold text-muted">
+                            Espace Pro | 
+                            {% if is_admin %}<span class="text-danger">ADMINISTRATEUR</span>
+                            {% elif is_livreur %}<span class="text-warning">LIVREUR</span> 
+                            {% else %}<span class="text-muted">STAFF</span>
+                            {% endif %}
+                        </span>
+                        <span class="text-muted">
+                            Connecté : <strong>{{ user.username|default:"Pro" }}</strong>
+                        </span>
+                    </div>
+                </div>
+                
+                <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm border-bottom sticky-top" style="padding-top: 0.75rem; padding-bottom: 0.75rem;">
+                    <div class="container-fluid px-4"> 
+
+                        <a href="{% if is_livreur %}{% url 'tableau_de_bord_livreur' %}{% else %}{% url 'tableau_bord_commandes' %}{% endif %}" 
+                           class="navbar-brand d-flex align-items-center fw-bold text-dark">
+                            <span class="me-2 fs-4">
+                                {% if is_livreur %}🚚{% else %}📊{% endif %}
+                            </span>
+                            <span class="d-none d-sm-inline">
+                                {% if is_livreur %}Tableau Livreur{% else %}Gestion Pro{% endif %}
+                            </span>
+                        </a>
+
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarProContent" aria-controls="navbarProContent" aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+
+                        <div class="collapse navbar-collapse" id="navbarProContent">
+                            
+                            <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-medium"> 
+                                
+                                {% if is_admin %}
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark" href="{% url 'tableau_bord_commandes' %}">Gestion Commandes</a>
+                                    </li>
+                                {% endif %}
+
+                                {% if is_admin or is_livreur %} 
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark" href="{% url 'tableau_de_bord_livreur' %}">Mes Livraisons</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% if is_admin %}
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark" href="{% url 'tableau_bord_produits' %}">Produits</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark" href="{% url 'tableau_bord_utilisateurs' %}">Utilisateurs</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+
+                            <div class="d-flex align-items-center gap-3">
+
+                                <form class="d-flex" action="{% url 'admin_search' %}" method="get">
+                                    <div class="input-group">
+                                        <input
+                                            type="text"
+                                            name="query"
+                                            placeholder="Rechercher Commande..."
+                                            class="form-control form-control-sm border-0 bg-light rounded-pill ps-3"
+                                            style="width: 200px; background-color: #f0f0f0; border: none; padding-right: 2.5rem;"
+                                        />
+                                        <button type="submit" class="btn btn-sm text-dark position-absolute end-0 top-50 translate-middle-y" style="z-index: 10;">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <div class="nav-item dropdown">
+                                    <a class="nav-link text-dark" href="#" id="navbarDropdownAccountPro" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-user-circle me-1 fs-5"></i> 
+                                        <span class="d-none d-lg-inline">{{ user.username }}</span>
+                                    </a>
+
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="navbarDropdownAccountPro">
+                                        <li class="dropdown-header text-muted small border-bottom">
+                                            {{ user.email|default:user.username }}
+                                        </li>
+                                        <li><a class="dropdown-item" href="{% url 'admin:password_change' %}">Paramètres</a></li>
+                                        
+                                        {% if is_admin %}
+                                            <li><a href="/admin/" target="_blank" class="dropdown-item text-primary border-top mt-1">Admin Django</a></li>
+                                        {% endif %}
+
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form action="{% url 'logout' %}" method="post">
+                                                {% csrf_token %}
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    Se déconnecter
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            {% endwith %}
+        {% endif %}
+    {% endwith %}
+</header>

@@ -27,18 +27,33 @@ const RegisterPage = () => {
             const response = await fetch('http://localhost:8000/api/register/', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json', // Utiliser JSON
                 },
-                credentials: 'include',
-                body: new URLSearchParams({
+                body: JSON.stringify({ // Envoyer les données au format JSON
                     username,
                     email,
-                    password: password1, // Le nom du champ peut varier côté Django
+                    password1, 
                     password2,
                 }),
+                credentials: 'include',
+                // headers: {
+                //     'Content-Type': 'application/x-www-form-urlencoded',
+                // },
+                // credentials: 'include',
+                // body: new URLSearchParams({
+                //     username,
+                //     email,
+                //     password: password1, // Le nom du champ peut varier côté Django
+                //     password2,
+                // }),
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch {
+                throw new Error('Réponse serveur invalide');
+            }
             if (data.success) {
                 showToast('Inscription réussie ! Vous pouvez maintenant vous connecter.');
                 navigate('/connexion'); // Rediriger vers la page de connexion
